@@ -17,7 +17,7 @@ export default function Home() {
 
 const Hero = () => {
   const [onImage, setOnImage] = useState(0)
-  const images = ['/car-1.jpg', '/car-2.jpg', '/car-3.jpg']
+  const images = ['/images/car-1.jpg', '/images/car-2.jpg', '/images/car-3.jpg']
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -53,7 +53,7 @@ const Hero = () => {
           onClick={() => window.open('https://wa.me/+62882003475593', '_blank')}
           size="lg"
         >
-          Hubungi Kami
+          Hubungi Kami Sekarang
         </Button>
       </div>
     </div>
@@ -91,11 +91,12 @@ const About = () => {
           </p>
         </div>
       </div>
-      <div className="lg:w-[30%] bg-black/20 px-20 rounded-md">
+      {/* <div className="lg:w-[30%] bg-black/20 px-20 rounded-md">
         <video autoPlay loop preload="auto">
-          <source src="/services.mp4" type="video/mp4" />
+          <source src="/videos/services.mp4" type="video/mp4" />
         </video>
-      </div>
+      </div> */}
+        <img src="/videos/services.gif" alt="services" className="lg:size-[500px] md:w-full md:h-[500px] object-cover rounded-lg" />
     </div>
   )
 }
