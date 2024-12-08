@@ -13,6 +13,8 @@ import router from '@adonisjs/core/services/router'
 const WebhookController = () => import('#controllers/webhooks_controller')
 
 router.on('/').renderInertia('home/index')
+router.on('/privacy').renderInertia('home/privacy')
+router.on('/terms').renderInertia('home/terms')
 router
   .group(() => {
     router.post('/facebook', [WebhookController, 'postFacebook'])
