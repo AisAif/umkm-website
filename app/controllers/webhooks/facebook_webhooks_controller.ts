@@ -1,7 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import axios, { AxiosError } from 'axios'
 
-export default class WebhooksController {
+export default class FacebookWebhooksController {
   private facebookConfig = {
     accessToken: process.env.FACEBOOK_ACCESS_TOKEN,
     // fbAccessToken: process.env.FACEBOOK_ACCESS_TOKEN,
