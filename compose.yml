@@ -1,0 +1,10 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "${PORT_EXPOSE:-8080}:${PORT:-8080}"
+    command: node ./bin/server.js
+    env_file:
+      - .env
