@@ -46,6 +46,7 @@ router.use([
  * the routes or the routes group.
  */
 export const middleware = router.named({
+  guest: () => import('#middleware/guest_middleware'),
   verifyFbWebhookSignature: () => import('#middleware/verify_fb_webhook_signature_middleware'),
   auth: () => import('#middleware/auth_middleware'),
 })

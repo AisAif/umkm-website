@@ -1,6 +1,8 @@
 import app from '@adonisjs/core/services/app'
 import { HttpContext, ExceptionHandler } from '@adonisjs/core/http'
 import type { StatusPageRange, StatusPageRenderer } from '@adonisjs/core/types/http'
+import { errors } from '@adonisjs/auth'
+import { errors as validationErrors } from '@vinejs/vine'
 
 export default class HttpExceptionHandler extends ExceptionHandler {
   /**
@@ -30,6 +32,18 @@ export default class HttpExceptionHandler extends ExceptionHandler {
    * response to the client
    */
   async handle(error: unknown, ctx: HttpContext) {
+    if (error instanceof errors.E_INVALID_CREDENTIALS) {
+      return super.handle(
+        new validationErrors.E_VALIDATION_ERROR([
+          {
+            field: 'email',
+            message: 'Invalid credentials',
+          },
+        ]),
+        ctx
+      )
+    }
+
     return super.handle(error, ctx)
   }
 
