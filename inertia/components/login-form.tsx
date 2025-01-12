@@ -3,19 +3,14 @@ import { Button } from '~/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card'
 import { Input } from '~/components/ui/input'
 import { Label } from '~/components/ui/label'
-import { useForm, usePage } from '@inertiajs/react'
-import { useEffect } from 'react'
+import { useForm } from '@inertiajs/react'
 
 export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRef<'div'>) {
-  const allProps = usePage();
   const form = useForm({
     email: '',
     password: '',
   })
 
-  useEffect(() => {
-    console.log(allProps)
-  }, [form])
   return (
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
@@ -33,7 +28,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                 },
                 onError: () => {
                   form.setData('password', '')
-                }
+                },
               })
             }}
           >
