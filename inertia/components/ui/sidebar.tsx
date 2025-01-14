@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Slot } from '@radix-ui/react-slot'
 import { VariantProps, cva } from 'class-variance-authority'
-import { PanelLeft } from 'lucide-react'
+import { Check, PanelLeft, X } from 'lucide-react'
 
 import { useIsMobile } from '~/hooks/use-mobile'
 import { cn } from '~/lib/utils'
@@ -13,6 +13,8 @@ import { Separator } from '~/components/ui/separator'
 import { Sheet, SheetContent } from '~/components/ui/sheet'
 import { Skeleton } from '~/components/ui/skeleton'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '~/components/ui/tooltip'
+import { usePage } from '@inertiajs/react'
+import { Alert, AlertDescription, AlertTitle } from './alert'
 
 const SIDEBAR_COOKIE_NAME = 'sidebar:state'
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -119,8 +121,46 @@ const SidebarProvider = React.forwardRef<
       [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
     )
 
+    // let params = new URLSearchParams(window.location.search)
+    // console.log(params.get('message'))
+
+    const propMessage = usePage().props.message as any
+
+    const [message, setMessage] = React.useState<{
+      type: 'success' | 'error'
+      text: string
+    } | null>(propMessage)
+
+    React.useEffect(() => {
+      if (message) {
+        setTimeout(() => {
+          setMessage(null)
+        }, 5000)
+      }
+    }, [message])
+
+    React.useEffect(() => {
+      if (propMessage) {
+        setMessage(propMessage)
+      }
+    }, [propMessage])
+
     return (
       <SidebarContext.Provider value={contextValue}>
+        {message && (
+          <div className="fixed bottom-6 right-6 w-fit z-[100000]">
+            <Alert variant={message.type === 'success' ? 'default' : 'destructive'}>
+              {message.type === 'success' ? (
+                <Check className="h-4 w-4" />
+              ) : (
+                <X className="h-4 w-4" />
+              )}
+              <AlertTitle>{message.type === 'success' ? 'Success' : 'Error'}</AlertTitle>
+              <AlertDescription>{message.text}</AlertDescription>
+            </Alert>
+          </div>
+        )}
+
         <TooltipProvider delayDuration={0}>
           <div
             style={
@@ -306,7 +346,7 @@ SidebarRail.displayName = 'SidebarRail'
 const SidebarInset = React.forwardRef<HTMLDivElement, React.ComponentProps<'main'>>(
   ({ className, ...props }, ref) => {
     return (
-      <div>
+      <div className="w-full">
         <SidebarTrigger className="m-2 md:m-3" />
         <main
           ref={ref}

@@ -12,6 +12,7 @@ const inertiaConfig = defineConfig({
    * Data that should be shared with all rendered pages
    */
   sharedData: {
+    message: (ctx) => ctx.session?.flashMessages.get('message'),
     errors: (ctx) => ctx.session?.flashMessages.get('errors'),
     user: (ctx) => ctx.auth?.user,
   },
@@ -30,5 +31,9 @@ export default inertiaConfig
 declare module '@adonisjs/inertia/types' {
   export interface SharedProps extends InferSharedProps<typeof inertiaConfig> {
     user?: User
+    message: {
+      type: 'success' | 'error'
+      text: string
+    }
   }
 }

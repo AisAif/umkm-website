@@ -34,7 +34,11 @@ router
 
     router
       .group(() => {
-        router.get('/model', [BotsController, 'index']).use(middleware.auth())
+        router.get('/model', [BotsController, 'index']).use(middleware.auth()).as('bot.model.index')
+        router
+          .put('/model/:id/activate', [BotsController, 'activate'])
+          .use(middleware.auth())
+          .as('bot.model.activate')
       })
       .prefix('/bot')
   })
