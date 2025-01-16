@@ -30,19 +30,30 @@ router
 
 router
   .group(() => {
-    router.on('/').renderInertia('dashboard/index').use(middleware.auth())
+    router.on('/').renderInertia('dashboard/index')
 
     router
       .group(() => {
-        router.get('/model', [BotsController, 'index']).use(middleware.auth()).as('bot.model.index')
         router
-          .put('/model/:id/activate', [BotsController, 'activate'])
-          .use(middleware.auth())
-          .as('bot.model.activate')
+          .group(() => {
+            router.get('/', [BotsController, 'index']).as('bot.model.index')
+            router.put('/:id/activate', [BotsController, 'activate']).as('bot.model.activate')
+          })
+          .prefix('model')
+
+        router
+          .group(() => {
+            router.get('/', [BotsController, 'getDataset']).as('bot.dataset.index')
+            router
+              .post('/add/file', [BotsController, 'addDatasetViaFile'])
+              .as('bot.dataset.add.file')
+          })
+          .prefix('dataset')
       })
       .prefix('/bot')
   })
   .prefix('/dashboard')
+  .use(middleware.auth())
 
 router
   .group(() => {

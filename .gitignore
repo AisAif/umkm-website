@@ -26,3 +26,4 @@ yarn-error.log
 
 # Other
 ecosystem.config.cjs
+storage/

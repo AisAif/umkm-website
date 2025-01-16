@@ -1,4 +1,4 @@
-import BotModel from '#models/bot_model'
+import Message from '#models/message'
 import { Link } from '@inertiajs/react'
 import { ColumnDef } from '@tanstack/react-table'
 import { Ellipsis } from 'lucide-react'
@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '~/components/ui/dropdown-menu'
 
-export const columns: ColumnDef<BotModel>[] = [
+export const columns: ColumnDef<Message>[] = [
   {
     header: 'No.',
     cell: ({ row }) => {
@@ -19,15 +19,8 @@ export const columns: ColumnDef<BotModel>[] = [
     },
   },
   {
-    accessorKey: 'name',
-    header: 'Name',
-  },
-  {
-    accessorKey: 'isActive',
-    header: 'Status',
-    cell: ({ getValue }) => {
-      return getValue() ? 'Active' : 'Inactive'
-    },
+    accessorKey: 'content',
+    header: 'Content',
   },
   {
     accessorKey: 'createdAt',

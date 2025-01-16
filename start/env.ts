@@ -50,4 +50,6 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   RASA_PORT: Env.schema.number(),
   RASA_TOKEN: Env.schema.string(),
+
+  IGNORED_SENDER_NAMES: Env.schema.string.optional(),
 })
