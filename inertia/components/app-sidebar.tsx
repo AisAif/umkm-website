@@ -7,9 +7,8 @@ import { Sidebar, SidebarContent, SidebarFooter, SidebarRail } from '~/component
 import { Head, usePage } from '@inertiajs/react'
 import { SharedProps } from '@adonisjs/inertia/types'
 
-
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const user = (usePage().props).user as SharedProps['user']
+  const user = usePage().props.user as SharedProps['user']
   return (
     <Sidebar collapsible="icon" {...props}>
       <Head title="Dashboard" />
@@ -39,6 +38,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 {
                   title: 'Dataset',
                   url: '/dashboard/bot/dataset',
+                },
+                {
+                  title: 'Response',
+                  url: '/dashboard/bot/response',
                 },
               ],
             },

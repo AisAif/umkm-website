@@ -28,7 +28,7 @@ const GeneralPagination = ({
       <PaginationContent className="flex items-center justify-between gap-2">
         {meta.firstPageUrl && (
           <>
-            <PaginationItem>
+            <PaginationItem key="first">
               <Link
                 data={{
                   ...query,
@@ -45,7 +45,7 @@ const GeneralPagination = ({
         )}
         {meta.previousPageUrl && (
           <>
-            <PaginationItem>
+            <PaginationItem key="prev">
               <Link
                 data={{
                   ...query,
@@ -98,7 +98,7 @@ const GeneralPagination = ({
         )}
         {meta.nextPageUrl && (
           <>
-            <PaginationItem>
+            <PaginationItem key="next">
               <Link
                 data={{
                   ...query,
@@ -114,7 +114,7 @@ const GeneralPagination = ({
           </>
         )}
         {meta.lastPageUrl && (
-          <PaginationItem>
+          <PaginationItem key="last">
             <Link
               data={{
                 ...query,

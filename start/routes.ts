@@ -59,6 +59,15 @@ router
               .as('bot.intent.message.add')
           })
           .prefix('intent')
+
+        router
+          .group(() => {
+            router.get('/', [BotsController, 'getResponse']).as('bot.response.index')
+            router.post('/', [BotsController, 'addResponse']).as('bot.response.add')
+            router.put('/:id', [BotsController, 'editResponse']).as('bot.response.edit')
+            router.delete('/:id', [BotsController, 'deleteResponse']).as('bot.response.delete')
+          })
+          .prefix('response')
       })
       .prefix('/bot')
   })

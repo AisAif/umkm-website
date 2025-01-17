@@ -6,6 +6,8 @@ import axios from 'axios'
 import fs from 'node:fs/promises'
 import AdmZip from 'adm-zip'
 import Intent from '#models/intent'
+import Response from '#models/response'
+import { addResponseValidator, editResponseValidator } from '#validators/response'
 // import path from 'node:path'
 
 export default class BotsController {
@@ -212,5 +214,104 @@ export default class BotsController {
 
       return response.redirect().toRoute('bot.dataset.index')
     }
+  }
+
+  public async getResponse({ inertia, request }: HttpContext) {
+    const search = request.input('search')
+    const responses = await Response.query()
+
+      .where((query) => {
+        if (search) {
+          return query
+            .where('content', 'like', `%${search}%`)
+            .orWhere('name', 'like', `%${search}%`)
+        }
+        return
+      })
+      .orderBy('created_at', 'desc')
+      .paginate(request.input('page', 1), 10)
+
+    return inertia.render('dashboard/bot/response/index', { responses })
+  }
+
+  public async addResponse({ session, request, response }: HttpContext) {
+    const payload = await request.validateUsing(addResponseValidator)
+
+    const existResponse = await Response.query().where('name', payload.name)
+    if (existResponse.length > 0) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Response name already exists',
+      })
+      return response.redirect().toRoute('bot.response.index')
+    }
+
+    const responseModel = new Response()
+    responseModel.name = payload.name
+    responseModel.content = payload.content
+    await responseModel.save()
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Response added',
+    })
+    return response.redirect().toRoute('bot.response.index')
+  }
+
+  public async editResponse({ session, request, response }: HttpContext) {
+    const payload = await request.validateUsing(editResponseValidator)
+
+    const id = request.param('id')
+
+    let existResponse = await Response.query()
+      .where('name', payload.name)
+      .whereNot('id', id)
+      .first()
+    if (existResponse) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Response name already exists',
+      })
+      return response.redirect().toRoute('bot.response.index')
+    }
+
+    existResponse = await Response.find(id)
+    if (!existResponse) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Response not found',
+      })
+      return response.redirect().toRoute('bot.response.index')
+    }
+
+    existResponse.name = payload.name
+    existResponse.content = payload.content
+    await existResponse.save()
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Response updated',
+    })
+    return response.redirect().toRoute('bot.response.index')
+  }
+
+  public async deleteResponse({ session, request, response }: HttpContext) {
+    const id = request.param('id')
+    const existResponse = await Response.find(id)
+    if (!existResponse) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Response not found',
+      })
+      return response.redirect().toRoute('bot.response.index')
+    }
+
+    await existResponse.delete()
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Response deleted',
+    })
+    return response.redirect().toRoute('bot.response.index')
   }
 }
