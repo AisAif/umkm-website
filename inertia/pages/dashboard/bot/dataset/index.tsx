@@ -9,6 +9,7 @@ import GeneralPagination from '~/components/general-pagination'
 import { Head } from '@inertiajs/react'
 import Header from '../../../../components/header'
 import AddDataset from './add'
+import DatasetFilter from './filter'
 
 export default function Page({ datasets }: InferPageProps<BotsController, 'getDataset'>) {
   return (
@@ -20,6 +21,7 @@ export default function Page({ datasets }: InferPageProps<BotsController, 'getDa
       <SidebarInset>
         <Header title="Dataset">
           <AddDataset />
+          <DatasetFilter  />
         </Header>
 
         <DataTable columns={columns} data={datasets.data as Message[]} />

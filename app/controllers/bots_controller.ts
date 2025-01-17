@@ -5,6 +5,7 @@ import type { HttpContext } from '@adonisjs/core/http'
 import axios from 'axios'
 import fs from 'node:fs/promises'
 import AdmZip from 'adm-zip'
+import Intent from '#models/intent'
 // import path from 'node:path'
 
 export default class BotsController {
@@ -48,58 +49,112 @@ export default class BotsController {
     return response.redirect().toRoute('bot.model.index')
   }
 
-  public async getDataset({ inertia, request }: HttpContext) {
-    const datasets = await Message.query()
-      .orderBy('created_at', 'desc')
-      .paginate(request.input('page', 1), 10)
-    return inertia.render('dashboard/bot/dataset/index', { datasets })
+  public async addIntent({ session, request, response }: HttpContext) {
+    const name: string = request.input('name')
+    if (!name || name === '') {
+      session.flash('message', {
+        type: 'error',
+        text: 'Intent name is required',
+      })
+      return response.redirect().toRoute('bot.dataset.index')
+    }
+
+    const existIntent = await Intent.query().where('name', name)
+    if (existIntent.length > 0) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Intent is already exist',
+      })
+      return response.redirect().toRoute('bot.dataset.index')
+    }
+
+    await Intent.create({
+      name,
+    })
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Intent successfully added',
+    })
+    return response.redirect().toRoute('bot.dataset.index')
   }
 
-  // public async addDatasetViaFile({ session, request, response }: HttpContext) {
-  //   const files = request.files('files', { extnames: ['json'] })
-  //   const existingContents = new Set(
-  //     await Message.query()
-  //       .select('content')
-  //       .then((rows) => rows.map((row) => row.content))
-  //   )
+  public async deleteIntent({ session, request, response }: HttpContext) {
+    const existIntent = await Intent.find(request.param('id'))
+    if (!existIntent) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Intent not found',
+      })
+      return response.redirect().toRoute('bot.dataset.index')
+    }
 
-  //   try {
-  //     for (const file of files) {
-  //       if (!file.isValid) {
-  //         continue
-  //       }
-  //       const content = await fs.readFile(file.tmpPath!, 'utf-8')
-  //       const json: { messages: { sender_name: string; content?: string }[] } =
-  //         await JSON.parse(content)
-  //       const messages = json.messages
-  //         .map((message) => {
-  //           if (this.ignoredSenderNames.includes(message.sender_name) || !message.content)
-  //             return null
+    await existIntent.delete()
 
-  //           return {
-  //             content: message.content,
-  //           }
-  //         })
-  //         .filter((value) => value !== null)
-  //         .filter((message) => !existingContents.has(message.content))
-  //       await Message.createMany(messages)
-  //     }
+    session.flash('message', {
+      type: 'success',
+      text: 'Intent successfully deleted',
+    })
+    return response.redirect().toRoute('bot.dataset.index')
+  }
 
-  //     session.flash('message', {
-  //       type: 'success',
-  //       text: 'Dataset berhasil ditambahkan',
-  //     })
-  //     return response.redirect().toRoute('bot.dataset.index')
-  //   } catch (error) {
-  //     console.log(error)
-  //     session.flash('message', {
-  //       type: 'error',
-  //       text: 'Dataset gagal ditambahkan',
-  //     })
+  public async addMessageToIntent({ session, request, response }: HttpContext) {
+    const messageId = request.param('message_id')
+    const intentId = request.param('id')
 
-  //     return response.redirect().toRoute('bot.dataset.index')
-  //   }
-  // }
+    try {
+      const message = await Message.find(messageId)
+      const intent = await Intent.find(intentId)
+      if (!intent || !message) {
+        session.flash('message', {
+          type: 'error',
+          text: 'Intent or message not found',
+        })
+        return response.redirect().toRoute('bot.dataset.index')
+      }
+
+      await message.related('intent').associate(intent)
+
+      session.flash('message', {
+        type: 'success',
+        text: 'Message successfully added to intent',
+      })
+      return response.redirect().toRoute('bot.dataset.index')
+    } catch (error) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Failed to add message to intent',
+      })
+      return response.redirect().toRoute('bot.dataset.index')
+    }
+  }
+
+  public async getDataset({ inertia, request }: HttpContext) {
+    const type = request.input('type', 'all')
+    const search = request.input('search')
+    const datasets = await Message.query()
+      .where((query) => {
+        if (type === 'labeled') {
+          return query.whereNotNull('intent_id')
+        } else if (type === 'unlabeled') {
+          return query.whereNull('intent_id')
+        }
+        return
+      })
+      .where((query) => {
+        if (search) {
+          return query.where('content', 'like', `%${search}%`)
+        }
+        return
+      })
+      .orderBy('created_at', 'desc')
+      .preload('intent')
+      .paginate(request.input('page', 1), 10)
+
+    const intents = await Intent.query().orderBy('name', 'asc')
+
+    return inertia.render('dashboard/bot/dataset/index', { datasets, intents })
+  }
 
   public async addDatasetViaFile({ session, request, response }: HttpContext) {
     const files = request.files('files', { extnames: ['zip'] })
@@ -135,7 +190,11 @@ export default class BotsController {
             })
             .filter((value) => value !== null)
             .filter((message) => !existingContents.has(message.content))
-          await Message.createMany(messages)
+          const createdMessages = await Message.createMany(messages)
+
+          createdMessages.forEach(async (message) => {
+            existingContents.add(message.content)
+          })
         }
       })
 

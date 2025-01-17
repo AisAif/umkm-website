@@ -49,6 +49,16 @@ router
               .as('bot.dataset.add.file')
           })
           .prefix('dataset')
+
+        router
+          .group(() => {
+            router.post('/add', [BotsController, 'addIntent']).as('bot.intent.add')
+            router.delete('/:id', [BotsController, 'deleteIntent']).as('bot.intent.delete')
+            router
+              .post('/:id/message/:message_id', [BotsController, 'addMessageToIntent'])
+              .as('bot.intent.message.add')
+          })
+          .prefix('intent')
       })
       .prefix('/bot')
   })

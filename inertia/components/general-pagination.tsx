@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-r
 import { Pagination, PaginationContent, PaginationItem } from '~/components/ui/pagination'
 import { Separator } from './ui/separator'
 import { cn } from '~/lib/utils'
+import QueryString from 'qs'
 
 const GeneralPagination = ({
   meta,
@@ -19,6 +20,9 @@ const GeneralPagination = ({
     previousPageUrl: null | string
   }
 }) => {
+  const query = QueryString.parse(window.location.search, {
+    ignoreQueryPrefix: true,
+  })
   return (
     <Pagination>
       <PaginationContent className="flex items-center justify-between gap-2">
@@ -26,8 +30,12 @@ const GeneralPagination = ({
           <>
             <PaginationItem>
               <Link
+                data={{
+                  ...query,
+                  page: meta.firstPage,
+                }}
                 className="text-slate-700 text-sm flex gap-1 items-center"
-                href={`${meta.firstPageUrl.slice(1)}`}
+                href=""
               >
                 <ChevronsLeft className="h-4 w-4" />
               </Link>
@@ -39,8 +47,12 @@ const GeneralPagination = ({
           <>
             <PaginationItem>
               <Link
+                data={{
+                  ...query,
+                  page: meta.currentPage - 1,
+                }}
                 className="text-slate-700 text-sm flex gap-1 items-center"
-                href={`${meta.previousPageUrl.slice(1)}`}
+                href=""
               >
                 <ChevronLeft className="h-4 w-4" />
               </Link>
@@ -61,11 +73,15 @@ const GeneralPagination = ({
             <>
               <PaginationItem key={page}>
                 <Link
+                  data={{
+                    ...query,
+                    page: currentPage,
+                  }}
                   className={cn(
                     'text-slate-700 text-sm flex gap-1 items-center',
                     meta.currentPage == currentPage && 'font-bold text-slate-900'
                   )}
-                  href={`?page=${currentPage}`}
+                  href=""
                 >
                   {currentPage}
                 </Link>
@@ -84,8 +100,12 @@ const GeneralPagination = ({
           <>
             <PaginationItem>
               <Link
+                data={{
+                  ...query,
+                  page: meta.currentPage + 1,
+                }}
                 className="text-slate-700 text-sm flex gap-1 items-center"
-                href={`${meta.nextPageUrl.slice(1)}`}
+                href=""
               >
                 <ChevronRight className="h-4 w-4" />
               </Link>
@@ -96,8 +116,12 @@ const GeneralPagination = ({
         {meta.lastPageUrl && (
           <PaginationItem>
             <Link
+              data={{
+                ...query,
+                page: meta.lastPage,
+              }}
               className="text-slate-700 text-sm flex gap-1 items-center"
-              href={`${meta.lastPageUrl.slice(1)}`}
+              href=""
             >
               <ChevronsRight className="h-4 w-4" />
             </Link>
