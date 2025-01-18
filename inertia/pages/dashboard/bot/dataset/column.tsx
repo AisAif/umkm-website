@@ -21,6 +21,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '~/components/ui/popover'
 import { cn } from '~/lib/utils'
 import AddIntent from './add-intent'
+import DatasetMutation from './mutation'
 
 export const columns: ColumnDef<Message>[] = [
   {
@@ -126,14 +127,28 @@ export const columns: ColumnDef<Message>[] = [
             <Ellipsis />
           </DropdownMenuTrigger>
           <DropdownMenuContent>
+            <DatasetMutation
+              method="put"
+              title="Edit"
+              url={`/dashboard/bot/dataset/${row.original.id}`}
+              formContent={{
+                content: row.original.content,
+                intentId: row.original.intent?.id,
+              }}
+              key={`edit-${row.original.id}`}
+              className="w-full text-sm py-2"
+            >
+              Edit
+            </DatasetMutation>
             <DropdownMenuItem>
               <Link
-                href={`/dashboard/bot/model/${row.original.id}/activate`}
-                method="put"
+                href={`/dashboard/bot/dataset/${row.original.id}/`}
+                method="delete"
                 as="button"
                 onClick={() => setOpen(false)}
+                className="w-full"
               >
-                Activate
+                Delete
               </Link>
             </DropdownMenuItem>
           </DropdownMenuContent>

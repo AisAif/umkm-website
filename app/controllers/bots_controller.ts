@@ -8,6 +8,7 @@ import AdmZip from 'adm-zip'
 import Intent from '#models/intent'
 import Response from '#models/response'
 import { addResponseValidator, editResponseValidator } from '#validators/response'
+import { addDatasetValidator, editDatasetValidator } from '#validators/dataset'
 // import path from 'node:path'
 
 export default class BotsController {
@@ -158,6 +159,19 @@ export default class BotsController {
     return inertia.render('dashboard/bot/dataset/index', { datasets, intents })
   }
 
+  public async addDataset({ session, request, response }: HttpContext) {
+    const payload = await request.validateUsing(addDatasetValidator)
+
+    await Message.create(payload)
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Dataset successfully added',
+    })
+
+    return response.redirect().toRoute('bot.dataset.index')
+  }
+
   public async addDatasetViaFile({ session, request, response }: HttpContext) {
     const files = request.files('files', { extnames: ['zip'] })
     const existingContents = new Set(
@@ -214,6 +228,49 @@ export default class BotsController {
 
       return response.redirect().toRoute('bot.dataset.index')
     }
+  }
+
+  public async editDataset({ session, request, response }: HttpContext) {
+    const payload = await request.validateUsing(editDatasetValidator)
+    const id = request.param('id')
+
+    const existMessage = await Message.find(id)
+    if (!existMessage) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Message not found',
+      })
+      return response.redirect().toRoute('bot.dataset.index')
+    }
+
+    await existMessage.merge(payload).save()
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Dataset successfully updated',
+    })
+
+    return response.redirect().toRoute('bot.dataset.index')
+  }
+
+  public async deleteDataset({ session, request, response }: HttpContext) {
+    const id = request.param('id')
+    const existMessage = await Message.find(id)
+    if (!existMessage) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Message not found',
+      })
+      return response.redirect().toRoute('bot.dataset.index')
+    }
+
+    await existMessage.delete()
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Message successfully deleted',
+    })
+    return response.redirect().toRoute('bot.dataset.index')
   }
 
   public async getResponse({ inertia, request }: HttpContext) {

@@ -44,9 +44,12 @@ router
         router
           .group(() => {
             router.get('/', [BotsController, 'getDataset']).as('bot.dataset.index')
+            router.post('/', [BotsController, 'addDataset']).as('bot.dataset.add')
             router
               .post('/add/file', [BotsController, 'addDatasetViaFile'])
               .as('bot.dataset.add.file')
+            router.put('/:id', [BotsController, 'editDataset']).as('bot.dataset.edit')
+            router.delete('/:id', [BotsController, 'deleteDataset']).as('bot.dataset.delete')
           })
           .prefix('dataset')
 
