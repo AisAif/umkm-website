@@ -9,6 +9,10 @@ import Intent from '#models/intent'
 import Response from '#models/response'
 import { addResponseValidator, editResponseValidator } from '#validators/response'
 import { addDatasetValidator, editDatasetValidator } from '#validators/dataset'
+import Rule from '#models/rule'
+import Story from '#models/story'
+import { addStoryValidator, editStoryValidator } from '#validators/story'
+import { addRuleValidator, editRuleValidator } from '#validators/rule'
 // import path from 'node:path'
 
 export default class BotsController {
@@ -370,5 +374,191 @@ export default class BotsController {
       text: 'Response deleted',
     })
     return response.redirect().toRoute('bot.response.index')
+  }
+
+  public async getStory({ inertia, request }: HttpContext) {
+    const stories = await Story.query()
+      .preload('steps', (query) => query.preload('response').preload('intent'))
+      .where((query) => {
+        if (request.input('search')) {
+          return query.where('name', 'like', `%${request.input('search')}%`)
+        }
+      })
+      .orderBy('created_at', 'desc')
+      .paginate(request.input('page', 1), 10)
+    const intents = await Intent.query().orderBy('name', 'asc')
+    const responses = await Response.query().orderBy('name', 'asc')
+    return inertia.render('dashboard/bot/story/index', { stories, intents, responses })
+  }
+
+  public async addStory({ session, request, response }: HttpContext) {
+    const payload = await request.validateUsing(addStoryValidator)
+
+    const existStory = await Story.query().where('name', payload.name).first()
+    if (existStory) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Story name already exists',
+      })
+      return response.redirect().toRoute('bot.story.index')
+    }
+
+    const story = new Story()
+    story.name = payload.name
+    await story.save()
+    await story.related('steps').createMany(payload.steps)
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Story added',
+    })
+    return response.redirect().toRoute('bot.story.index')
+  }
+
+  public async editStory({ session, request, response }: HttpContext) {
+    const payload = await request.validateUsing(editStoryValidator)
+    const id = request.param('id')
+
+    let existStory = await Story.query().where('name', payload.name).where('id', '!=', id).first()
+    if (existStory) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Story name already exists',
+      })
+      return response.redirect().toRoute('bot.story.index')
+    }
+
+    existStory = await Story.find(id)
+    if (!existStory) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Story not found',
+      })
+      return response.redirect().toRoute('bot.story.index')
+    }
+
+    existStory.name = payload.name
+    await existStory.related('steps').query().delete()
+    await existStory.related('steps').createMany(payload.steps)
+    await existStory.save()
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Story updated',
+    })
+    return response.redirect().toRoute('bot.story.index')
+  }
+
+  public async deleteStory({ session, request, response }: HttpContext) {
+    const id = request.param('id')
+    const existStory = await Story.find(id)
+    if (!existStory) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Story not found',
+      })
+      return response.redirect().toRoute('bot.story.index')
+    }
+
+    await existStory.delete()
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Story deleted',
+    })
+    return response.redirect().toRoute('bot.story.index')
+  }
+
+  public async getRule({ inertia, request }: HttpContext) {
+    const rules = await Rule.query()
+      .preload('steps', (query) => query.preload('response').preload('intent'))
+      .where((query) => {
+        if (request.input('search')) {
+          return query.where('name', 'like', `%${request.input('search')}%`)
+        }
+      })
+      .orderBy('created_at', 'desc')
+      .paginate(request.input('page', 1), 10)
+    const intents = await Intent.query().orderBy('name', 'asc')
+    const responses = await Response.query().orderBy('name', 'asc')
+    return inertia.render('dashboard/bot/rule/index', { rules, intents, responses })
+  }
+
+  public async addRule({ session, request, response }: HttpContext) {
+    const payload = await request.validateUsing(addRuleValidator)
+
+    const existRule = await Rule.query().where('name', payload.name).first()
+    if (existRule) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Rule name already exists',
+      })
+      return response.redirect().toRoute('bot.rule.index')
+    }
+
+    const rule = new Rule()
+    rule.name = payload.name
+    await rule.save()
+    await rule.related('steps').createMany(payload.steps)
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Rule added',
+    })
+    return response.redirect().toRoute('bot.rule.index')
+  }
+
+  public async editRule({ session, request, response }: HttpContext) {
+    const payload = await request.validateUsing(editRuleValidator)
+    const id = request.param('id')
+
+    let existRule = await Rule.query().where('name', payload.name).where('id', '!=', id).first()
+    if (existRule) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Rule name already exists',
+      })
+      return response.redirect().toRoute('bot.rule.index')
+    }
+
+    existRule = await Rule.find(id)
+    if (!existRule) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Rule not found',
+      })
+      return response.redirect().toRoute('bot.rule.index')
+    }
+
+    existRule.name = payload.name
+    await existRule.related('steps').query().delete()
+    await existRule.related('steps').createMany(payload.steps)
+    await existRule.save()
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Rule updated',
+    })
+    return response.redirect().toRoute('bot.rule.index')
+  }
+
+  public async deleteRule({ session, request, response }: HttpContext) {
+    const id = request.param('id')
+    const existRule = await Rule.find(id)
+    if (!existRule) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Rule not found',
+      })
+      return response.redirect().toRoute('bot.rule.index')
+    }
+
+    await existRule.delete()
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Rule deleted',
+    })
+    return response.redirect().toRoute('bot.rule.index')
   }
 }

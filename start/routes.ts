@@ -71,6 +71,24 @@ router
             router.delete('/:id', [BotsController, 'deleteResponse']).as('bot.response.delete')
           })
           .prefix('response')
+
+        router
+          .group(() => {
+            router.get('/', [BotsController, 'getStory']).as('bot.story.index')
+            router.post('/', [BotsController, 'addStory']).as('bot.story.add')
+            router.put('/:id', [BotsController, 'editStory']).as('bot.story.edit')
+            router.delete('/:id', [BotsController, 'deleteStory']).as('bot.story.delete')
+          })
+          .prefix('story')
+
+        router
+          .group(() => {
+            router.get('/', [BotsController, 'getRule']).as('bot.rule.index')
+            router.post('/', [BotsController, 'addRule']).as('bot.rule.add')
+            router.put('/:id', [BotsController, 'editRule']).as('bot.rule.edit')
+            router.delete('/:id', [BotsController, 'deleteRule']).as('bot.rule.delete')
+          })
+          .prefix('rule')
       })
       .prefix('/bot')
   })

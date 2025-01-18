@@ -43,6 +43,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   title: 'Response',
                   url: '/dashboard/bot/response',
                 },
+                {
+                  title: 'Story',
+                  url: '/dashboard/bot/story',
+                },
+                {
+                  title: 'Rule',
+                  url: '/dashboard/bot/rule',
+                },
               ],
             },
           ]}

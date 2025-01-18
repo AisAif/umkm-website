@@ -49,7 +49,6 @@ const ResponseMutation = ({
               if (method === 'post') {
                 form.post(url, {
                   onSuccess: () => {
-                    form.reset()
                     setOpen(false)
                   },
                 })

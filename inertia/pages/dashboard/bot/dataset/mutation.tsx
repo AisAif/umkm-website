@@ -66,7 +66,6 @@ const DatasetMutation = ({
               } else if (method === 'put') {
                 form.put(url, {
                   onSuccess: () => {
-                    form.reset()
                     setOpen(false)
                   },
                 })
