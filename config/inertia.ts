@@ -1,4 +1,5 @@
 import User from '#models/user'
+import env from '#start/env'
 import { defineConfig } from '@adonisjs/inertia'
 import type { InferSharedProps } from '@adonisjs/inertia/types'
 
@@ -12,6 +13,7 @@ const inertiaConfig = defineConfig({
    * Data that should be shared with all rendered pages
    */
   sharedData: {
+    appName: () => env.get('VITE_APP_NAME'),
     message: (ctx) => ctx.session?.flashMessages.get('message'),
     errors: (ctx) => ctx.session?.flashMessages.get('errors'),
     user: (ctx) => ctx.auth?.user,

@@ -33,6 +33,7 @@ const Hero = () => {
       <div className="flex flex-col md:flex-row justify-between items-center gap-10">
         {images.map((image, index) => (
           <img
+            key={index}
             className={cn(
               'size-[300px] object-cover rounded-lg transition-all',
               index === onImage ? 'transform scale-110' : 'transform scale-100'

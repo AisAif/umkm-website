@@ -18,6 +18,7 @@ const BotsController = () => import('#controllers/bots_controller')
 router.on('/').renderInertia('home/index')
 router.on('/privacy').renderInertia('home/privacy')
 router.on('/terms').renderInertia('home/terms')
+router.post('/send-message', [BotsController, 'sendMessage']).as('bot.message.send')
 
 router
   .group(() => {

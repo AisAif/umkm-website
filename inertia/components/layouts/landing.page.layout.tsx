@@ -1,7 +1,9 @@
 import { Link, usePage } from '@inertiajs/react'
 import React, { useState } from 'react'
-import { Button } from '../ui/button'
+import { Button } from '~/components/ui/button'
 import { cn } from '~/lib/utils'
+import Chat from '~/components/chat'
+import { Bot, X } from 'lucide-react'
 
 export default function LandingPageLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,6 +12,7 @@ export default function LandingPageLayout({ children }: { children: React.ReactN
       <div className="flex flex-col justify-between items-center px-4 md:px-12 mt-24">
         {children}
       </div>
+      <AIAssistant />
       <Footer />
     </>
   )
@@ -131,5 +134,28 @@ const Footer = () => {
         </p>
       </div>
     </div>
+  )
+}
+
+const AIAssistant = () => {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button onClick={() => setOpen(!open)} className="fixed right-4 bottom-4 size-fit rounded-[20%]">
+        {!open ? (
+          <>
+            Chat dengan AI
+            <Bot />
+          </>
+        ) : (
+          <X className="h-4 w-4" />
+        )}
+      </Button>
+      {open && (
+        <div className="fixed right-4 bottom-16">
+          <Chat />
+        </div>
+      )}
+    </>
   )
 }

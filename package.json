@@ -100,6 +100,7 @@
     "tailwind-scrollbar-hide": "^1.1.7",
     "tailwindcss-animate": "^1.0.7",
     "use-debounce": "^10.0.4",
+    "uuid": "^11.0.5",
     "yaml": "^2.7.0"
   },
   "hotHook": {

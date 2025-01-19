@@ -11,13 +11,13 @@ import Intent from '#models/intent'
 import Response from '#models/response'
 import Rule from '#models/rule'
 import Story from '#models/story'
+import { IncomingMessage } from 'node:http'
+import { Readable } from 'node:stream'
 import { addResponseValidator, editResponseValidator } from '#validators/response'
 import { addDatasetValidator, editDatasetValidator } from '#validators/dataset'
 import { addStoryValidator, editStoryValidator } from '#validators/story'
 import { addRuleValidator, editRuleValidator } from '#validators/rule'
-import { IncomingMessage } from 'node:http'
-import { Readable } from 'node:stream'
-// import path from 'node:path'
+import { sendMessageValidator } from '#validators/message'
 
 export default class BotsController {
   private client = axios.create({
@@ -26,6 +26,32 @@ export default class BotsController {
   })
 
   private ignoredSenderNames = env.get('IGNORED_SENDER_NAMES')?.split(',') ?? []
+
+  public async sendMessage({ session, request, response }: HttpContext) {
+    const payload = await request.validateUsing(sendMessageValidator)
+    try {
+      const result = await this.client.post('/webhooks/rest/webhook', {
+        sender: payload.sender,
+        message: payload.message,
+      })
+
+      if (result.data[0].text === env.get('RASA_DEFAULT_ANSWER')) {
+        await Message.create({
+          content: payload.message,
+        })
+      }
+      session.flash('message', {
+        type: 'success',
+        text: result.data[0].text,
+      })
+    } catch (error) {
+      session.flash('message', {
+        type: 'error',
+        text: 'Failed to send message',
+      })
+    }
+    return response.redirect().back()
+  }
 
   public async index({ inertia, request }: HttpContext) {
     const models = await BotModel.query()
@@ -44,17 +70,60 @@ export default class BotsController {
       .preload('steps', (query) => query.preload('response').preload('intent'))
       .orderBy('name', 'asc')
     const payload = {
-      // pipeline: [],
-      // policies: [],
-      intents: intents.map((intent) => intent.name),
+      pipeline: [
+        {
+          name: 'WhitespaceTokenizer',
+        },
+        {
+          name: 'RegexFeaturizer',
+        },
+        {
+          name: 'LexicalSyntacticFeaturizer',
+        },
+        {
+          name: 'CountVectorsFeaturizer',
+        },
+        {
+          name: 'CountVectorsFeaturizer',
+          analyzer: 'char_wb',
+          min_ngram: 1,
+          max_ngram: 4,
+        },
+        {
+          name: 'DIETClassifier',
+          epochs: 100,
+        },
+        {
+          name: 'EntitySynonymMapper',
+        },
+        {
+          name: 'ResponseSelector',
+          epochs: 100,
+        },
+        {
+          name: 'FallbackClassifier',
+          threshold: 0.7,
+        },
+      ],
+      policies: [
+        {
+          name: 'RulePolicy',
+          core_fallback_threshold: 0.7,
+          core_fallback_action_name: 'action_default_fallback',
+          enable_fallback_prediction: true,
+        },
+      ],
+      intents: [...intents.map((intent) => intent.name), 'nlu_fallback'],
       // entities: [],
       // slots: [],
-      // actions: [],
+      actions: ['action_default_fallback'],
       // forms: [],
       // e2e_actions: [],
       responses: responses.reduce(
         (acc, item) => ({ ...acc, [`utter_${item.name}`]: [{ text: item.content }] }),
-        {}
+        {
+          utter_default: [{ text: env.get('RASA_DEFAULT_ANSWER') }],
+        }
       ),
       // session_config: {
       //   session_expiration_time: 60,
@@ -67,17 +136,30 @@ export default class BotsController {
           ''
         ),
       })),
-      rules: rules.map((rule) => ({
-        rule: rule.name,
-        steps: rule.steps.flatMap((step) => [
-          {
-            intent: step.intent?.name,
-          },
-          {
-            action: `utter_${step.response.name}`,
-          },
-        ]),
-      })),
+      rules: [
+        ...rules.map((rule) => ({
+          rule: rule.name,
+          steps: rule.steps.flatMap((step) => [
+            {
+              intent: step.intent?.name,
+            },
+            {
+              action: `utter_${step.response.name}`,
+            },
+          ]),
+        })),
+        {
+          rule: 'Activate fallback response',
+          steps: [
+            {
+              intent: 'nlu_fallback',
+            },
+            {
+              action: 'utter_default',
+            },
+          ],
+        },
+      ],
       stories: stories.map((story) => ({
         story: story.name,
         steps: story.steps.flatMap((step) => [
