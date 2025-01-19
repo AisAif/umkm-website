@@ -7,6 +7,8 @@ import { columns } from './column'
 import BotModel from '#models/bot_model'
 import GeneralPagination from '~/components/general-pagination'
 import { Head } from '@inertiajs/react'
+import Header from '~/components/header'
+import Train from './train'
 
 export default function Page({ models }: InferPageProps<BotsController, 'index'>) {
   return (
@@ -14,6 +16,9 @@ export default function Page({ models }: InferPageProps<BotsController, 'index'>
       <Head title="Model" />
       <AppSidebar />
       <SidebarInset>
+        <Header title="Model">
+          <Train />
+        </Header>
         <DataTable columns={columns} data={models.data as BotModel[]} />
         <GeneralPagination meta={models.meta} />
       </SidebarInset>

@@ -1,18 +1,22 @@
-import BotModel from '#models/bot_model'
-import Message from '#models/message'
-import env from '#start/env'
 import type { HttpContext } from '@adonisjs/core/http'
+import env from '#start/env'
 import axios from 'axios'
 import fs from 'node:fs/promises'
+import drive from '@adonisjs/drive/services/main'
+import YAML from 'yaml'
+import BotModel from '#models/bot_model'
+import Message from '#models/message'
 import AdmZip from 'adm-zip'
 import Intent from '#models/intent'
 import Response from '#models/response'
-import { addResponseValidator, editResponseValidator } from '#validators/response'
-import { addDatasetValidator, editDatasetValidator } from '#validators/dataset'
 import Rule from '#models/rule'
 import Story from '#models/story'
+import { addResponseValidator, editResponseValidator } from '#validators/response'
+import { addDatasetValidator, editDatasetValidator } from '#validators/dataset'
 import { addStoryValidator, editStoryValidator } from '#validators/story'
 import { addRuleValidator, editRuleValidator } from '#validators/rule'
+import { IncomingMessage } from 'node:http'
+import { Readable } from 'node:stream'
 // import path from 'node:path'
 
 export default class BotsController {
@@ -24,30 +28,143 @@ export default class BotsController {
   private ignoredSenderNames = env.get('IGNORED_SENDER_NAMES')?.split(',') ?? []
 
   public async index({ inertia, request }: HttpContext) {
-    const models = await BotModel.query().paginate(request.input('page', 1), 10)
+    const models = await BotModel.query()
+      .orderBy('created_at', 'desc')
+      .paginate(request.input('page', 1), 10)
     return inertia.render('dashboard/bot/model/index', { models })
+  }
+
+  public async trainModel({ response, session }: HttpContext) {
+    const intents = await Intent.query().preload('messages').orderBy('name', 'asc')
+    const responses = await Response.query().orderBy('name', 'asc')
+    const rules = await Rule.query()
+      .preload('steps', (query) => query.preload('response').preload('intent'))
+      .orderBy('name', 'asc')
+    const stories = await Story.query()
+      .preload('steps', (query) => query.preload('response').preload('intent'))
+      .orderBy('name', 'asc')
+    const payload = {
+      // pipeline: [],
+      // policies: [],
+      intents: intents.map((intent) => intent.name),
+      // entities: [],
+      // slots: [],
+      // actions: [],
+      // forms: [],
+      // e2e_actions: [],
+      responses: responses.reduce(
+        (acc, item) => ({ ...acc, [`utter_${item.name}`]: [{ text: item.content }] }),
+        {}
+      ),
+      // session_config: {
+      //   session_expiration_time: 60,
+      //   carry_over_slots_to_new_session: true,
+      // },
+      nlu: intents.map((intent) => ({
+        intent: intent.name,
+        examples: intent.messages.reduce(
+          (acc, message) => (acc !== '' ? `${acc}\n- ${message.content}` : `- ${message.content}`),
+          ''
+        ),
+      })),
+      rules: rules.map((rule) => ({
+        rule: rule.name,
+        steps: rule.steps.flatMap((step) => [
+          {
+            intent: step.intent?.name,
+          },
+          {
+            action: `utter_${step.response.name}`,
+          },
+        ]),
+      })),
+      stories: stories.map((story) => ({
+        story: story.name,
+        steps: story.steps.flatMap((step) => [
+          {
+            intent: step.intent?.name,
+          },
+          {
+            action: `utter_${step.response.name}`,
+          },
+        ]),
+      })),
+    }
+    console.log({ payload: YAML.stringify(payload) })
+    const result = await this.client.post<IncomingMessage>(
+      '/model/train',
+      YAML.stringify(payload),
+      {
+        responseType: 'stream',
+      }
+    )
+
+    const chunks: Buffer[] = []
+    let contentLength = 0
+
+    result.data.on('data', (chunk) => {
+      chunks.push(chunk)
+      contentLength += chunk.length
+    })
+
+    result.data.on('end', async () => {
+      console.log('model trained, saving model...')
+      const fileBuffer = Buffer.concat(chunks)
+      const readableStream = new Readable({
+        read() {
+          this.push(fileBuffer)
+          this.push(null)
+        },
+      })
+      await drive
+        .use('s3')
+        .putStream(`${env.get('NODE_ENV')}/${result.headers.filename}`, readableStream, {
+          contentLength,
+        })
+      console.log('model saved')
+
+      await BotModel.create({
+        name: result.headers.filename,
+        isActive: false,
+      })
+    })
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Model berhasil di train',
+    })
+
+    return response.redirect().toRoute('bot.model.index')
   }
 
   public async activate({ request, response, session }: HttpContext) {
     const model = await BotModel.findOrFail(request.param('id'))
-    const result = await this.client.put('/model', {
-      model_server: {
-        url: `${env.get('S3_ENDPOINT').replace(/\/$/, '')}/${env.get('S3_BUCKET')}/${env.get('NODE_ENV')}/${model.name}`,
-        wait_time_between_pulls: 0,
-      },
-    })
+    try {
+      const result = await this.client.put('/model', {
+        model_server: {
+          url: `${env.get('S3_ENDPOINT').replace(/\/$/, '')}/${env.get('S3_BUCKET')}/${env.get('NODE_ENV')}/${model.name}`,
+          wait_time_between_pulls: 0,
+        },
+      })
 
-    if (result.status >= 300) {
+      if (result.status >= 300) {
+        session.flash('message', {
+          type: 'error',
+          text: 'Model gagal diaktifkan',
+        })
+        return response.redirect().toRoute('bot.model.index')
+      }
+
+      await BotModel.query().where('id', '!=', model.id).update({ isActive: false })
+      model.isActive = true
+      await model.save()
+    } catch (error) {
       session.flash('message', {
         type: 'error',
         text: 'Model gagal diaktifkan',
       })
       return response.redirect().toRoute('bot.model.index')
     }
-
-    await BotModel.query().where('id', '!=', model.id).update({ isActive: false })
-    model.isActive = true
-    await model.save()
 
     session.flash('message', {
       type: 'success',

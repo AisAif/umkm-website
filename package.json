@@ -99,7 +99,8 @@
     "tailwind-merge": "^2.5.5",
     "tailwind-scrollbar-hide": "^1.1.7",
     "tailwindcss-animate": "^1.0.7",
-    "use-debounce": "^10.0.4"
+    "use-debounce": "^10.0.4",
+    "yaml": "^2.7.0"
   },
   "hotHook": {
     "boundaries": [

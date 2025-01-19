@@ -38,6 +38,7 @@ router
           .group(() => {
             router.get('/', [BotsController, 'index']).as('bot.model.index')
             router.put('/:id/activate', [BotsController, 'activate']).as('bot.model.activate')
+            router.post('/train', [BotsController, 'trainModel']).as('bot.model.train')
           })
           .prefix('model')
 

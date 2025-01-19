@@ -7,7 +7,7 @@ import { columns } from './column'
 import Message from '#models/message'
 import GeneralPagination from '~/components/general-pagination'
 import { Head } from '@inertiajs/react'
-import Header from '../../../../components/header'
+import Header from '~/components/header'
 import AddDataset from './add'
 import DatasetFilter from './filter'
 
