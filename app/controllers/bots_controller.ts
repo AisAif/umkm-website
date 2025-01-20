@@ -22,7 +22,7 @@ import { sendMessageValidator } from '#validators/message'
 export default class BotsController {
   private client = axios.create({
     baseURL: `http://localhost:${env.get('RASA_PORT')}/`,
-    params: { token: env.get('RASA_TOKEN') },
+    params: { token: env.get('RASA_SECRET') },
   })
 
   private ignoredSenderNames = env.get('IGNORED_SENDER_NAMES')?.split(',') ?? []

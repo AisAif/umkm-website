@@ -49,7 +49,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   S3_ENDPOINT: Env.schema.string(),
 
   RASA_PORT: Env.schema.number(),
-  RASA_TOKEN: Env.schema.string(),
+  RASA_SECRET: Env.schema.string(),
   RASA_DEFAULT_ANSWER: Env.schema.string(),
 
   IGNORED_SENDER_NAMES: Env.schema.string.optional(),
