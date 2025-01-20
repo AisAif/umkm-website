@@ -1,3 +1,4 @@
+import { BotService } from '#services/bot_service'
 import type { HttpContext } from '@adonisjs/core/http'
 import axios, { AxiosError } from 'axios'
 
@@ -20,14 +21,22 @@ export default class FacebookWebhooksController {
 
   public async index() {}
 
-  private handleFacebookMessage(body: Record<string, any>, callback: (senderId: string) => void) {
+  private handleFacebookMessage(
+    body: Record<string, any>,
+    callback: (sender: string, message: string) => void
+  ) {
     body.entry.forEach(async (entry: any) => {
-      console.log(entry)
       const webhookEvent = entry.messaging[0]
-      const senderId = webhookEvent.sender.id
+      const senderId = webhookEvent.sender?.id
       console.log({ time: new Date(), webhookEvent, senderId })
+
       if (webhookEvent.message && senderId !== this.facebookConfig.pageId) {
-        callback(senderId)
+        const sender = `user-${senderId}`
+        const result = await new BotService().sendMessage({
+          message: webhookEvent.message.text,
+          sender,
+        })
+        callback(senderId, result.data[0]?.text)
       }
     })
   }
@@ -37,7 +46,7 @@ export default class FacebookWebhooksController {
     console.log(request.body())
     const body = request.body()
     if (body.object === 'page') {
-      this.handleFacebookMessage(body, async (senderId) => {
+      this.handleFacebookMessage(body, async (senderId, message) => {
         try {
           await this.client.post(
             `${this.facebookConfig.pageId}/messages?access_token=${this.facebookConfig.accessToken}`,
@@ -47,7 +56,7 @@ export default class FacebookWebhooksController {
               },
               message_type: 'RESPONSE',
               message: {
-                text: 'Ok',
+                text: message,
               },
             }
           )
@@ -58,7 +67,7 @@ export default class FacebookWebhooksController {
         }
       })
     } else if (body.object === 'instagram') {
-      this.handleFacebookMessage(body, async (senderId) => {
+      this.handleFacebookMessage(body, async (senderId, message) => {
         try {
           await this.client.post(
             `me/messages?access_token=${this.facebookConfig.accessToken}`,
@@ -67,7 +76,7 @@ export default class FacebookWebhooksController {
                 id: senderId,
               },
               message: {
-                text: 'Ok',
+                text: message,
               },
             }
             // `recipient={"id":"${senderId}"}&message={"text":"Ok"}`

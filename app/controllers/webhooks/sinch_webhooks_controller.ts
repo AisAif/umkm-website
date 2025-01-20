@@ -1,3 +1,4 @@
+import { BotService } from '#services/bot_service'
 import type { HttpContext } from '@adonisjs/core/http'
 import axios, { AxiosError } from 'axios'
 
@@ -30,6 +31,11 @@ export default class SinchWebhooksController {
       return
     }
 
+    const botResult = await new BotService().sendMessage({
+      message: requestBody.message.contact_message.text_message.text,
+      sender: requestBody.message.contact_id,
+    })
+
     const sendMessage = {
       app_id: requestBody.app_id,
       recipient: {
@@ -37,7 +43,7 @@ export default class SinchWebhooksController {
       },
       message: {
         text_message: {
-          text: 'You sent: ' + requestBody.message.contact_message.text_message.text,
+          text: botResult.data[0].text,
         },
       },
       channel_priority_order: [requestBody.message.channel_identity.channel],

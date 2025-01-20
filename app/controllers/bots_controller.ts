@@ -18,6 +18,7 @@ import { addDatasetValidator, editDatasetValidator } from '#validators/dataset'
 import { addStoryValidator, editStoryValidator } from '#validators/story'
 import { addRuleValidator, editRuleValidator } from '#validators/rule'
 import { sendMessageValidator } from '#validators/message'
+import { BotService } from '#services/bot_service'
 
 export default class BotsController {
   private client = axios.create({
@@ -30,16 +31,11 @@ export default class BotsController {
   public async sendMessage({ session, request, response }: HttpContext) {
     const payload = await request.validateUsing(sendMessageValidator)
     try {
-      const result = await this.client.post('/webhooks/rest/webhook', {
-        sender: payload.sender,
+      const result = await new BotService().sendMessage({
         message: payload.message,
+        sender: payload.sender,
       })
 
-      if (result.data[0].text === env.get('RASA_DEFAULT_ANSWER')) {
-        await Message.create({
-          content: payload.message,
-        })
-      }
       session.flash('message', {
         type: 'success',
         text: result.data[0].text,
