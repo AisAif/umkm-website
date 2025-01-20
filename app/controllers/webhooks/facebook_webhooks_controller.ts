@@ -22,8 +22,10 @@ export default class FacebookWebhooksController {
 
   private handleFacebookMessage(body: Record<string, any>, callback: (senderId: string) => void) {
     body.entry.forEach(async (entry: any) => {
+      console.log(entry)
       const webhookEvent = entry.messaging[0]
       const senderId = webhookEvent.sender.id
+      console.log({ time: new Date(), webhookEvent, senderId })
       if (webhookEvent.message && senderId !== this.facebookConfig.pageId) {
         callback(senderId)
       }
