@@ -4,13 +4,7 @@ FROM node:20.12.2-alpine3.18 AS base
 FROM base AS deps
 WORKDIR /app
 ADD package.json package-lock.json ./
-RUN npm ci
-
-# Production only deps stage
-FROM base AS production-deps
-WORKDIR /app
-ADD package.json package-lock.json ./
-RUN npm ci --omit=dev
+RUN npm install
 
 # Build stage
 FROM base AS build
@@ -23,7 +17,7 @@ RUN node ace build
 FROM base
 ENV NODE_ENV=production
 WORKDIR /app
-COPY --from=production-deps /app/node_modules /app/node_modules
+COPY --from=deps /app/node_modules /app/node_modules
 COPY --from=build /app/build /app
 EXPOSE ${PORT}
 CMD ["node", "./bin/server.js"]
