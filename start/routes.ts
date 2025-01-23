@@ -91,6 +91,13 @@ router
             router.delete('/:id', [BotsController, 'deleteRule']).as('bot.rule.delete')
           })
           .prefix('rule')
+
+        router
+          .group(() => {
+            router.get('/', [BotsController, 'getIntegration']).as('bot.integration.index')
+            router.post('/toggle-activate', [BotsController, 'toggleActivate'])
+          })
+          .prefix('integration')
       })
       .prefix('/bot')
   })

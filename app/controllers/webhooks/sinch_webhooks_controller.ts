@@ -1,4 +1,4 @@
-import { BotService } from '#services/bot_service'
+import BotService from '#services/bot_service'
 import type { HttpContext } from '@adonisjs/core/http'
 import axios, { AxiosError } from 'axios'
 
@@ -31,7 +31,12 @@ export default class SinchWebhooksController {
       return
     }
 
-    const botResult = await new BotService().sendMessage({
+    if (!BotService.providers.find((prov) => prov.name === 'sinch')?.isActive) {
+      response.send('Could not process request, sinch is disabled')
+      return
+    }
+
+    const botResult = await BotService.sendMessage({
       message: requestBody.message.contact_message.text_message.text,
       sender: requestBody.message.contact_id,
     })

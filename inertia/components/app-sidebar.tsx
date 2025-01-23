@@ -51,6 +51,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   title: 'Rule',
                   url: '/dashboard/bot/rule',
                 },
+                {
+                  title: 'Integration',
+                  url: '/dashboard/bot/integration',
+                },
               ],
             },
           ]}

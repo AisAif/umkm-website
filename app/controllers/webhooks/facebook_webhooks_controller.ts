@@ -1,4 +1,4 @@
-import { BotService } from '#services/bot_service'
+import BotService from '#services/bot_service'
 import type { HttpContext } from '@adonisjs/core/http'
 import axios, { AxiosError } from 'axios'
 
@@ -32,7 +32,7 @@ export default class FacebookWebhooksController {
 
       if (webhookEvent.message && senderId !== this.facebookConfig.pageId) {
         const sender = `user-${senderId}`
-        const result = await new BotService().sendMessage({
+        const result = await BotService.sendMessage({
           message: webhookEvent.message.text,
           sender,
         })
@@ -41,10 +41,15 @@ export default class FacebookWebhooksController {
     })
   }
 
-  public async postFacebook({ request }: HttpContext) {
+  public async postFacebook({ request, response }: HttpContext) {
     console.log('webhook called')
     console.log(request.body())
     const body = request.body()
+    if (!BotService.providers.find((prov) => prov.name === 'facebook')?.isActive) {
+      response.send('Could not process request, facebook is disabled')
+      return
+    }
+
     if (body.object === 'page') {
       this.handleFacebookMessage(body, async (senderId, message) => {
         try {

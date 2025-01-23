@@ -18,7 +18,7 @@ import { addDatasetValidator, editDatasetValidator } from '#validators/dataset'
 import { addStoryValidator, editStoryValidator } from '#validators/story'
 import { addRuleValidator, editRuleValidator } from '#validators/rule'
 import { sendMessageValidator } from '#validators/message'
-import { BotService } from '#services/bot_service'
+import BotService from '#services/bot_service'
 
 export default class BotsController {
   private client = axios.create({
@@ -31,7 +31,7 @@ export default class BotsController {
   public async sendMessage({ session, request, response }: HttpContext) {
     const payload = await request.validateUsing(sendMessageValidator)
     try {
-      const result = await new BotService().sendMessage({
+      const result = await BotService.sendMessage({
         message: payload.message,
         sender: payload.sender,
       })
@@ -54,6 +54,27 @@ export default class BotsController {
       .orderBy('created_at', 'desc')
       .paginate(request.input('page', 1), 10)
     return inertia.render('dashboard/bot/model/index', { models })
+  }
+
+  public async getIntegration({ inertia }: HttpContext) {
+    const providers = BotService.providers
+    return inertia.render('dashboard/bot/integration/index', { providers })
+  }
+
+  public async toggleActivate({ session, request, response }: HttpContext) {
+    ;(request.input('providers') as { name: string; isActive: boolean }[]).forEach(
+      ({ name, isActive }) => {
+        console.log({ name, isActive })
+        BotService.toggleActivate({ name, isActive })
+      }
+    )
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Provider toggled',
+    })
+
+    return response.redirect().toRoute('bot.integration.index')
   }
 
   public async trainModel({ response, session }: HttpContext) {
