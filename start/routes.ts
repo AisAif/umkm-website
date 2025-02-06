@@ -40,6 +40,7 @@ router
             router.get('/', [BotsController, 'index']).as('bot.model.index')
             router.put('/:id/activate', [BotsController, 'activate']).as('bot.model.activate')
             router.post('/train', [BotsController, 'trainModel']).as('bot.model.train')
+            router.get('/status', [BotsController, 'status']).as('bot.model.status')
           })
           .prefix('model')
 

@@ -1,5 +1,5 @@
 import BotModel from '#models/bot_model'
-import { Link } from '@inertiajs/react'
+import { Link, router } from '@inertiajs/react'
 import { ColumnDef } from '@tanstack/react-table'
 import { Ellipsis } from 'lucide-react'
 import { useState } from 'react'
@@ -51,6 +51,12 @@ export const columns: ColumnDef<BotModel>[] = [
               <Link
                 href={`/dashboard/bot/model/${row.original.id}/activate`}
                 method="put"
+                onSuccess={() => {
+                  console.log('success')
+                  router.visit(window.location.href, {
+                    replace: true,
+                  })
+                }}
                 as="button"
                 onClick={() => setOpen(false)}
               >

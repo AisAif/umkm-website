@@ -1,4 +1,4 @@
-import { useForm } from '@inertiajs/react'
+import { router, useForm } from '@inertiajs/react'
 import { useState } from 'react'
 import { Button } from '~/components/ui/button'
 import {
@@ -28,7 +28,14 @@ const Train = () => {
           <Button
             onClick={() => {
               setOpen(false)
-              form.post('/dashboard/bot/model/train')
+              form.post('/dashboard/bot/model/train', {
+                onSuccess: () => {
+                  console.log('success')
+                  router.visit(window.location.href, {
+                    replace: true,
+                  })
+                },
+              })
             }}
             type="submit"
           >

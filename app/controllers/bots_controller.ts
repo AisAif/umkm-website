@@ -1,9 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import env from '#start/env'
-import axios from 'axios'
 import fs from 'node:fs/promises'
-import drive from '@adonisjs/drive/services/main'
-import YAML from 'yaml'
 import BotModel from '#models/bot_model'
 import Message from '#models/message'
 import AdmZip from 'adm-zip'
@@ -11,8 +8,6 @@ import Intent from '#models/intent'
 import Response from '#models/response'
 import Rule from '#models/rule'
 import Story from '#models/story'
-import { IncomingMessage } from 'node:http'
-import { Readable } from 'node:stream'
 import { addResponseValidator, editResponseValidator } from '#validators/response'
 import { addDatasetValidator, editDatasetValidator } from '#validators/dataset'
 import { addStoryValidator, editStoryValidator } from '#validators/story'
@@ -21,11 +16,6 @@ import { sendMessageValidator } from '#validators/message'
 import BotService from '#services/bot_service'
 
 export default class BotsController {
-  private client = axios.create({
-    baseURL: `http://${env.get('NODE_ENV') === 'development' ? 'localhost' : 'rasa'}:${env.get('RASA_PORT')}/`,
-    params: { token: env.get('RASA_SECRET') },
-  })
-
   private ignoredSenderNames = env.get('IGNORED_SENDER_NAMES')?.split(',') ?? []
 
   public async sendMessage({ session, request, response }: HttpContext) {
@@ -77,198 +67,28 @@ export default class BotsController {
     return response.redirect().toRoute('bot.integration.index')
   }
 
-  public async trainModel({ response, session }: HttpContext) {
-    const intents = await Intent.query().preload('messages').orderBy('name', 'asc')
-    const responses = await Response.query().orderBy('name', 'asc')
-    const rules = await Rule.query()
-      .preload('steps', (query) => query.preload('response').preload('intent'))
-      .orderBy('name', 'asc')
-    const stories = await Story.query()
-      .preload('steps', (query) => query.preload('response').preload('intent'))
-      .orderBy('name', 'asc')
-    const payload = {
-      pipeline: [
-        {
-          name: 'WhitespaceTokenizer',
-        },
-        {
-          name: 'RegexFeaturizer',
-        },
-        {
-          name: 'LexicalSyntacticFeaturizer',
-        },
-        {
-          name: 'CountVectorsFeaturizer',
-        },
-        {
-          name: 'CountVectorsFeaturizer',
-          analyzer: 'char_wb',
-          min_ngram: 1,
-          max_ngram: 4,
-        },
-        {
-          name: 'DIETClassifier',
-          epochs: 100,
-        },
-        {
-          name: 'EntitySynonymMapper',
-        },
-        {
-          name: 'ResponseSelector',
-          epochs: 100,
-        },
-        {
-          name: 'FallbackClassifier',
-          threshold: 0.7,
-        },
-      ],
-      policies: [
-        {
-          name: 'RulePolicy',
-          core_fallback_threshold: 0.7,
-          core_fallback_action_name: 'action_default_fallback',
-          enable_fallback_prediction: true,
-        },
-      ],
-      intents: [...intents.map((intent) => intent.name), 'nlu_fallback'],
-      // entities: [],
-      // slots: [],
-      actions: ['action_default_fallback'],
-      // forms: [],
-      // e2e_actions: [],
-      responses: responses.reduce(
-        (acc, item) => ({ ...acc, [`utter_${item.name}`]: [{ text: item.content }] }),
-        {
-          utter_default: [{ text: env.get('RASA_DEFAULT_ANSWER') }],
-        }
-      ),
-      // session_config: {
-      //   session_expiration_time: 60,
-      //   carry_over_slots_to_new_session: true,
-      // },
-      nlu: intents.map((intent) => ({
-        intent: intent.name,
-        examples: intent.messages.reduce(
-          (acc, message) => (acc !== '' ? `${acc}\n- ${message.content}` : `- ${message.content}`),
-          ''
-        ),
-      })),
-      rules: [
-        ...rules.map((rule) => ({
-          rule: rule.name,
-          steps: rule.steps.flatMap((step) => [
-            {
-              intent: step.intent?.name,
-            },
-            {
-              action: `utter_${step.response.name}`,
-            },
-          ]),
-        })),
-        {
-          rule: 'Activate fallback response',
-          steps: [
-            {
-              intent: 'nlu_fallback',
-            },
-            {
-              action: 'utter_default',
-            },
-          ],
-        },
-      ],
-      stories: stories.map((story) => ({
-        story: story.name,
-        steps: story.steps.flatMap((step) => [
-          {
-            intent: step.intent?.name,
-          },
-          {
-            action: `utter_${step.response.name}`,
-          },
-        ]),
-      })),
-    }
-    console.log({ payload: YAML.stringify(payload) })
-    const result = await this.client.post<IncomingMessage>(
-      '/model/train',
-      YAML.stringify(payload),
-      {
-        responseType: 'stream',
-      }
-    )
-
-    const chunks: Buffer[] = []
-    let contentLength = 0
-
-    result.data.on('data', (chunk) => {
-      chunks.push(chunk)
-      contentLength += chunk.length
-    })
-
-    result.data.on('end', async () => {
-      console.log('model trained, saving model...')
-      const fileBuffer = Buffer.concat(chunks)
-      const readableStream = new Readable({
-        read() {
-          this.push(fileBuffer)
-          this.push(null)
-        },
-      })
-      await drive
-        .use('s3')
-        .putStream(`${env.get('NODE_ENV')}/${result.headers.filename}`, readableStream, {
-          contentLength,
-        })
-      console.log('model saved')
-
-      await BotModel.create({
-        name: result.headers.filename,
-        isActive: false,
-      })
-    })
-
-    session.flash('message', {
-      type: 'success',
-      text: 'Model berhasil di train',
-    })
+  public async trainModel({ response }: HttpContext) {
+    BotService.trainModel()
 
     return response.redirect().toRoute('bot.model.index')
   }
 
-  public async activate({ request, response, session }: HttpContext) {
-    const model = await BotModel.findOrFail(request.param('id'))
-    try {
-      const result = await this.client.put('/model', {
-        model_server: {
-          url: `${env.get('S3_ENDPOINT').replace(/\/$/, '')}/${env.get('S3_BUCKET')}/${env.get('NODE_ENV')}/${model.name}`,
-          wait_time_between_pulls: 0,
-        },
-      })
-
-      if (result.status >= 300) {
-        session.flash('message', {
-          type: 'error',
-          text: 'Model gagal diaktifkan',
-        })
-        return response.redirect().toRoute('bot.model.index')
+  public async status({ response }: HttpContext) {
+    const status = BotService.status
+    if (status.name && !status.onProcess) {
+      BotService.status = {
+        onProcess: false,
+        processValue: undefined,
+        success: undefined,
+        name: undefined,
       }
-
-      await BotModel.query().where('id', '!=', model.id).update({ isActive: false })
-      model.isActive = true
-      await model.save()
-    } catch (error) {
-      session.flash('message', {
-        type: 'error',
-        text: 'Model gagal diaktifkan',
-      })
-      return response.redirect().toRoute('bot.model.index')
     }
+    return response.json(status)
+  }
 
-    session.flash('message', {
-      type: 'success',
-      text: 'Model berhasil diaktifkan',
-    })
+  public async activate({ request, response }: HttpContext) {
+    BotService.activateModel(request.param('id'))
+
     return response.redirect().toRoute('bot.model.index')
   }
 
