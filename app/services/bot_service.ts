@@ -201,18 +201,25 @@ class BotService {
             contentLength,
           })
         console.log('model saved')
+        this.status = {
+          onProcess: true,
+          processValue: 80,
+          name: 'train',
+        }
 
         await BotModel.query().update({ isActive: false })
         await BotModel.create({
           name: result.headers.filename,
           isActive: true,
         })
+
+        this.status = {
+          name: 'train',
+          onProcess: false,
+          processValue: undefined,
+          success: true,
+        }
       })
-      this.status = {
-        onProcess: true,
-        processValue: 80,
-        name: 'train',
-      }
     } catch (error) {
       console.log(error)
 
@@ -222,13 +229,6 @@ class BotService {
         processValue: undefined,
         success: false,
       }
-    }
-
-    this.status = {
-      name: 'train',
-      onProcess: false,
-      processValue: undefined,
-      success: true,
     }
   }
 
