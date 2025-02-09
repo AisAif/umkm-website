@@ -33,11 +33,11 @@ function Chat() {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (form.data.message.trim() === '') return
+    setMessages((prevMessages) => [...prevMessages, { type: 'answer', message: form.data.message }])
     form.post('/send-message', {
       onSuccess: (page) => {
         setMessages((prevMessages) => [
           ...prevMessages,
-          { type: 'answer', message: form.data.message },
           {
             type: 'message',
             message: (() => {
