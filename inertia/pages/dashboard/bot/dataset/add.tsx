@@ -9,7 +9,7 @@ import { Button } from '~/components/ui/button'
 import { Label } from '~/components/ui/label'
 import { Input } from '~/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs'
-import { useForm } from '@inertiajs/react'
+import { router, useForm } from '@inertiajs/react'
 import { useState } from 'react'
 import DatasetMutation from './mutation'
 
@@ -33,17 +33,15 @@ const AddDataset = () => {
             <UploadViaFile onSuccess={() => setOpen(false)} />
           </TabsContent>
           <TabsContent value="form">
-            <Button asChild className='my-8'>
-              <DatasetMutation
-                method="post"
-                title="Edit"
-                url={`/dashboard/bot/dataset/`}
-                key={`add-dataset`}
-                className="w-full text-sm py-2"
-              >
-                Add
-              </DatasetMutation>
-            </Button>
+            <DatasetMutation
+              method="post"
+              title="Edit"
+              url={`/dashboard/bot/dataset/`}
+              key={`add-dataset`}
+              className="w-full text-sm py-2"
+            >
+              Add
+            </DatasetMutation>
           </TabsContent>
         </Tabs>
       </DialogContent>
@@ -84,6 +82,9 @@ const UploadViaFile = ({ onSuccess }: { onSuccess?: () => void }) => {
                 onSuccess: () => {
                   form.reset()
                   onSuccess?.()
+                  router.visit(window.location.href, {
+                    replace: true,
+                  })
                 },
               })
             }

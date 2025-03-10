@@ -45,9 +45,11 @@ const DatasetMutation = ({
   const intents = usePage().props.intents as Intent[]
   return (
     <Dialog key={`dialog-${url}`} {...{ open, onOpenChange: setOpen }}>
-      <DialogTrigger className={className} asChild>
-        <button onClick={() => setOpen(true)}>{children}</button>
-      </DialogTrigger>
+      <Button asChild className="my-8">
+        <DialogTrigger className={className}>
+          {children}
+        </DialogTrigger>
+      </Button>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-slate-800">Fill The Form</DialogTitle>

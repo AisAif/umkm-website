@@ -9,7 +9,7 @@ import GeneralPagination from '~/components/general-pagination'
 import { Head } from '@inertiajs/react'
 import Header from '~/components/header'
 import Train from './train'
-import Status from './status'
+import Status from '~/components/status'
 
 export default function Page({ models }: InferPageProps<BotsController, 'index'>) {
   return (

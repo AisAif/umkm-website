@@ -10,6 +10,7 @@ import { Head } from '@inertiajs/react'
 import Header from '~/components/header'
 import AddDataset from './add'
 import DatasetFilter from './filter'
+import Status from '~/components/status'
 
 export default function Page({ datasets }: InferPageProps<BotsController, 'getDataset'>) {
   return (
@@ -23,6 +24,7 @@ export default function Page({ datasets }: InferPageProps<BotsController, 'getDa
           <AddDataset />
           <DatasetFilter  />
         </Header>
+        <Status />
 
         <DataTable columns={columns} data={datasets.data as Message[]} />
 

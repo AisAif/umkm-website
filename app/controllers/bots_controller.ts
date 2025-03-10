@@ -1,9 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import env from '#start/env'
-import fs from 'node:fs/promises'
 import BotModel from '#models/bot_model'
 import Message from '#models/message'
-import AdmZip from 'adm-zip'
 import Intent from '#models/intent'
 import Response from '#models/response'
 import Rule from '#models/rule'
@@ -14,10 +11,11 @@ import { addStoryValidator, editStoryValidator } from '#validators/story'
 import { addRuleValidator, editRuleValidator } from '#validators/rule'
 import { sendMessageValidator } from '#validators/message'
 import BotService from '#services/bot_service'
+// import App from '@adonisjs/core/services/app'
+// import path from 'node:path'
+// import fs from 'node:fs'
 
 export default class BotsController {
-  private ignoredSenderNames = env.get('IGNORED_SENDER_NAMES')?.split(',') ?? []
-
   public async sendMessage({ session, request, response }: HttpContext) {
     const payload = await request.validateUsing(sendMessageValidator)
     try {
@@ -199,6 +197,32 @@ export default class BotsController {
     return inertia.render('dashboard/bot/dataset/index', { datasets, intents })
   }
 
+  public async exportDataset({ request, response }: HttpContext) {
+    const total = request.input('total') || 100
+    const datasets = await Message.query()
+      .where((query) => {
+        return query.whereNull('intent_id')
+      })
+      .orderBy('created_at', 'desc')
+      .preload('intent')
+      .limit(total)
+
+    // create json
+    const data = datasets.map((dataset) => {
+      return {
+        content: dataset.content,
+        intent: dataset.intent?.name,
+      }
+    })
+
+    const fileName = `dataset-${Date.now()}.json`
+    const jsonBuffer = Buffer.from(JSON.stringify(data, null, 2), 'utf-8')
+
+    response.header('Content-Type', 'application/json')
+    response.header('Content-Disposition', `attachment; filename="${fileName}"`)
+    return response.send(jsonBuffer)
+  }
+
   public async addDataset({ session, request, response }: HttpContext) {
     const payload = await request.validateUsing(addDatasetValidator)
 
@@ -212,62 +236,10 @@ export default class BotsController {
     return response.redirect().toRoute('bot.dataset.index')
   }
 
-  public async addDatasetViaFile({ session, request, response }: HttpContext) {
+  public async addDatasetViaFile({ request, response }: HttpContext) {
     const files = request.files('files', { extnames: ['zip'] })
-    const existingContents = new Set(
-      await Message.query()
-        .select('content')
-        .then((rows) => rows.map((row) => row.content))
-    )
-
-    try {
-      const file = await fs.readFile(files[0].tmpPath!)
-
-      const zip = new AdmZip(file)
-      zip.getEntries().forEach(async (entry) => {
-        if (entry.name === 'message_1.json') {
-          const content = zip.readAsText(entry)
-
-          const json: { messages: { sender_name: string; content?: string }[] } =
-            await JSON.parse(content)
-          const messages = json.messages
-            .map((message) => {
-              if (this.ignoredSenderNames.includes(message.sender_name) || !message.content)
-                return null
-
-              if (message.content.length > 255) {
-                console.warn(`Message too long: ${message.content}`)
-                return null
-              }
-
-              return {
-                content: message.content,
-              }
-            })
-            .filter((value) => value !== null)
-            .filter((message) => !existingContents.has(message.content))
-          const createdMessages = await Message.createMany(messages)
-
-          createdMessages.forEach(async (message) => {
-            existingContents.add(message.content)
-          })
-        }
-      })
-
-      session.flash('message', {
-        type: 'success',
-        text: 'Dataset berhasil ditambahkan',
-      })
-      return response.redirect().toRoute('bot.dataset.index')
-    } catch (error) {
-      console.log(error)
-      session.flash('message', {
-        type: 'error',
-        text: 'Dataset gagal ditambahkan',
-      })
-
-      return response.redirect().toRoute('bot.dataset.index')
-    }
+    BotService.addDataset(files[0])
+    return response.redirect().toRoute('bot.dataset.index')
   }
 
   public async editDataset({ session, request, response }: HttpContext) {

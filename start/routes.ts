@@ -52,6 +52,7 @@ router
               .post('/add/file', [BotsController, 'addDatasetViaFile'])
               .as('bot.dataset.add.file')
             router.put('/:id', [BotsController, 'editDataset']).as('bot.dataset.edit')
+            router.get('/export', [BotsController, 'exportDataset']).as('bot.dataset.export')
             router.delete('/:id', [BotsController, 'deleteDataset']).as('bot.dataset.delete')
           })
           .prefix('dataset')

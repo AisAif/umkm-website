@@ -5,13 +5,18 @@ import drive from '@adonisjs/drive/services/main'
 import YAML from 'yaml'
 import { IncomingMessage } from 'node:http'
 import { Readable } from 'node:stream'
+import AdmZip from 'adm-zip'
+import fs from 'node:fs/promises'
 import BotModel from '#models/bot_model'
 import Intent from '#models/intent'
 import Response from '#models/response'
 import Rule from '#models/rule'
 import Story from '#models/story'
+import { MultipartFile } from '@adonisjs/bodyparser'
 
 class BotService {
+  private ignoredSenderNames = env.get('IGNORED_SENDER_NAMES')?.split(',') ?? []
+
   private client = axios.create({
     baseURL: `http://${env.get('NODE_ENV') === 'development' ? 'localhost' : 'rasa'}:${env.get('RASA_PORT')}/`,
     params: { token: env.get('RASA_SECRET') },
@@ -32,9 +37,79 @@ class BotService {
     onProcess: boolean
     processValue?: number
     success?: boolean
-    name?: 'train' | 'deploy'
+    name?: string
+    message?: string
   } = {
     onProcess: false,
+  }
+
+  public async addDataset(rawFile: MultipartFile) {
+    if (!rawFile || this.status.onProcess) return
+    this.status = {
+      onProcess: true,
+      name: 'addDataset',
+      processValue: 0,
+      message: 'Adding dataset',
+    }
+
+    const queryResult = await Message.query().select('content')
+    const existingContents = new Set(queryResult.map((row) => row.content))
+
+    this.status.processValue = 20
+
+    try {
+      const file = await fs.readFile(rawFile.tmpPath!)
+      const zip = new AdmZip(file)
+      const entries = zip.getEntries()
+
+      this.status.processValue = 40
+
+      for (let index = 0; index < entries.length; index++) {
+        const entry = entries[index]
+
+        if (entry.name === 'message_1.json') {
+          const content = zip.readAsText(entry)
+          const json: { messages: { sender_name: string; content?: string }[] } =
+            JSON.parse(content)
+
+          const messages = json.messages
+            .map((message) => {
+              if (this.ignoredSenderNames.includes(message.sender_name) || !message.content)
+                return null
+
+              if (message.content.length > 255) {
+                console.warn(`Message too long: ${message.content}`)
+                return null
+              }
+
+              return { content: message.content }
+            })
+            .filter((value) => value !== null)
+            .filter((message) => !existingContents.has(message!.content))
+
+          const createdMessages = await Message.createMany(messages)
+          createdMessages.forEach((message) => existingContents.add(message.content))
+        }
+
+        this.status.processValue = 40 + ((index + 1) / entries.length) * 60
+      }
+    } catch (error) {
+      console.log(error)
+      this.status = {
+        onProcess: false,
+        name: 'addDataset',
+        success: false,
+        processValue: undefined,
+      }
+      return
+    }
+
+    this.status = {
+      onProcess: false,
+      name: 'addDataset',
+      success: true,
+      processValue: undefined,
+    }
   }
 
   public async trainModel() {
@@ -47,6 +122,7 @@ class BotService {
       onProcess: true,
       processValue: 0,
       name: 'train',
+      message: 'Training model',
     }
 
     try {
@@ -164,11 +240,7 @@ class BotService {
       }
       console.log({ payload: YAML.stringify(payload) })
 
-      this.status = {
-        onProcess: true,
-        processValue: 30,
-        name: 'train',
-      }
+      this.status.processValue = 30
 
       const result = await this.client.post<IncomingMessage>(
         '/model/train',
@@ -201,11 +273,7 @@ class BotService {
             contentLength,
           })
         console.log('model saved')
-        this.status = {
-          onProcess: true,
-          processValue: 80,
-          name: 'train',
-        }
+        this.status.processValue = 80
 
         await BotModel.query().update({ isActive: false })
         await BotModel.create({
@@ -253,12 +321,7 @@ class BotService {
         },
       })
 
-      this.status = {
-        onProcess: true,
-        processValue: 60,
-        success: undefined,
-        name: 'deploy',
-      }
+      this.status.processValue = 80
 
       if (result.status >= 300) {
         throw new Error(`Something went wrong, status code: ${result.status}`)

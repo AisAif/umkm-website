@@ -8,7 +8,8 @@ const Status = () => {
     onProcess: boolean
     processValue?: number
     success: boolean
-    name: 'train' | 'deploy'
+    name: string
+    message: string
   } | null>()
 
   useEffect(() => {
@@ -41,7 +42,7 @@ const Status = () => {
             status.success && (status.success ? 'text-green-600' : 'text-red-600')
           )}
         >
-          {status.name === 'train' ? 'Training' : 'Activating'}{' '}
+          {status.message && status.message }{' '}
           {status.success ? (status.success ? 'success' : 'failed') : 'in progress...'}
         </p>
       </div>

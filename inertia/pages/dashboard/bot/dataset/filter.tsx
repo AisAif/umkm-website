@@ -10,6 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '~/components/ui/select'
+import { Button } from '~/components/ui/button'
 
 const DatasetFilter = () => {
   const initialQuery = QueryString.parse(window.location.search, { ignoreQueryPrefix: true }) as {
@@ -37,6 +38,9 @@ const DatasetFilter = () => {
 
   return (
     <div className="flex gap-2">
+      <Button asChild>
+        <a href="/dashboard/bot/dataset/export">Export Unlabeled</a>
+      </Button>
       <Select
         onValueChange={(filter) => {
           filterForm.setData('type', filter)
