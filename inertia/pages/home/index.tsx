@@ -1,8 +1,16 @@
-import { Head } from '@inertiajs/react'
+import Product from '#models/product'
+import type { PageProps } from '@adonisjs/inertia/types'
+import { Head, Link, usePage } from '@inertiajs/react'
+import { ArrowRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import LandingPageLayout from '~/components/layouts/landing.page.layout'
+import ProductCard from '~/components/product'
 import { Button } from '~/components/ui/button'
 import { cn } from '~/lib/utils'
+
+interface ProductPageProps extends PageProps {
+  products: Product[]
+}
 
 export default function Home() {
   return (
@@ -11,6 +19,7 @@ export default function Home() {
       <Hero />
       <About />
       <Service />
+      <ProductSection />
     </LandingPageLayout>
   )
 }
@@ -26,7 +35,10 @@ const Hero = () => {
     return () => clearInterval(interval)
   }, [])
   return (
-    <div id="home" className="flex flex-col justify-between items-center gap-16 py-20">
+    <div
+      id="home"
+      className="flex flex-col justify-between items-center gap-16 py-20 max-w-screen-2xl"
+    >
       <h1 className="text-3xl md:text-4xl font-bold text-center max-w-[500px]">
         Selamat datang di <span className="text-red-600">Obex Customlamp</span>
       </h1>
@@ -63,7 +75,10 @@ const Hero = () => {
 
 const About = () => {
   return (
-    <div id="about" className="flex flex-col lg:flex-row justify-between items-center gap-20 py-20">
+    <div
+      id="about"
+      className="flex flex-col lg:flex-row justify-between items-center gap-20 py-20 max-w-screen-2xl"
+    >
       <div className="flex flex-col gap-5 lg:w-[45%] text-justify">
         <h1 className="text-2xl md:text-4xl font-bold">Tentang Kami</h1>
         <div className="flex flex-col gap-2">
@@ -97,7 +112,11 @@ const About = () => {
           <source src="/videos/services.mp4" type="video/mp4" />
         </video>
       </div> */}
-        <img src="/videos/services.gif" alt="services" className="lg:size-[500px] md:w-full md:h-[500px] object-cover rounded-lg" />
+      <img
+        src="/videos/services.gif"
+        alt="services"
+        className="lg:size-[500px] md:w-full md:h-[500px] object-cover rounded-lg"
+      />
     </div>
   )
 }
@@ -106,7 +125,7 @@ const Service = () => {
   return (
     <div
       id="services"
-      className="flex flex-col md:flex-row justify-between items-center gap-20 py-20"
+      className="flex flex-col md:flex-row justify-between items-center gap-20 py-20 max-w-screen-2xl"
     >
       <iframe
         className="rounded-lg md:w-[45%] w-full"
@@ -139,6 +158,28 @@ const Service = () => {
           <h2 className="text-lg font-bold text-blue-600">3. Instalasi dan Servis Profesional</h2>
           <p>Tim kami memastikan pemasangan yang presisi untuk hasil terbaik.</p>
         </div>
+      </div>
+    </div>
+  )
+}
+
+const ProductSection = () => {
+  const page = usePage<ProductPageProps>()
+  // console.log(page.props.products)
+  return (
+    <div id="products" className="w-full flex flex-col gap-8 py-20 max-w-screen-2xl">
+      <div className="flex gap-4 justify-between">
+        <h1 className="text-2xl md:text-4xl font-bold">Produk Kami</h1>
+        <Button asChild>
+          <Link href="/product">
+            Lihat Semua <ArrowRight />
+          </Link>
+        </Button>
+      </div>
+      <div className="w-full grid lg:grid-cols-3 md:grid-cols-2">
+        {page.props.products.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
       </div>
     </div>
   )

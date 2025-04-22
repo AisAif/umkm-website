@@ -141,7 +141,10 @@ const AIAssistant = () => {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <Button onClick={() => setOpen(!open)} className="fixed right-4 bottom-4 size-fit rounded-[20%]">
+      <Button
+        onClick={() => setOpen(!open)}
+        className="fixed right-4 bottom-4 size-fit rounded-[20%]"
+      >
         {!open ? (
           <>
             Chat dengan AI

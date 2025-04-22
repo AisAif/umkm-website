@@ -9,6 +9,7 @@
 
 import router from '@adonisjs/core/services/router'
 import { middleware } from './kernel.js'
+import Product from '#models/product'
 
 const ProductsController = () => import('#controllers/products_controller')
 const FacebookWebhookController = () => import('#controllers/webhooks/facebook_webhooks_controller')
@@ -16,10 +17,19 @@ const SinchWebhookController = () => import('#controllers/webhooks/sinch_webhook
 const SessionController = () => import('#controllers/session_controller')
 const BotsController = () => import('#controllers/bots_controller')
 
-router.on('/').renderInertia('home/index')
+router.on('/').renderInertia('home/index', {
+  products: await Product.query().preload('tags').limit(3).orderBy('created_at', 'desc'),
+})
 router.on('/privacy').renderInertia('home/privacy')
 router.on('/terms').renderInertia('home/terms')
 router.post('/send-message', [BotsController, 'sendMessage']).as('bot.message.send')
+
+router
+  .group(() => {
+    router.get('/', [ProductsController, 'list']).as('product.list')
+    router.get('/:id', [ProductsController, 'show']).as('product.show')
+  })
+  .prefix('/product')
 
 router
   .group(() => {

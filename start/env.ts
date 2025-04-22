@@ -47,6 +47,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   AWS_REGION: Env.schema.string(),
   S3_BUCKET: Env.schema.string(),
   S3_ENDPOINT: Env.schema.string(),
+  S3_CDN_URL: Env.schema.string.optional(),
 
   RASA_PORT: Env.schema.number(),
   RASA_SECRET: Env.schema.string(),
