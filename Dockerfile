@@ -11,6 +11,9 @@ FROM base AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules /app/node_modules
 ADD . .
+
+RUN cp ./assets/rasa_config_default.template.ts ./assets/rasa_config_default.ts
+
 RUN node ace build
 
 # Production stage

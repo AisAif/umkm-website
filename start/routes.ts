@@ -10,6 +10,7 @@
 import router from '@adonisjs/core/services/router'
 import { middleware } from './kernel.js'
 
+const ProductsController = () => import('#controllers/products_controller')
 const FacebookWebhookController = () => import('#controllers/webhooks/facebook_webhooks_controller')
 const SinchWebhookController = () => import('#controllers/webhooks/sinch_webhooks_controller')
 const SessionController = () => import('#controllers/session_controller')
@@ -32,6 +33,28 @@ router
 router
   .group(() => {
     router.on('/').renderInertia('dashboard/index')
+
+    router
+      .group(() => {
+        router
+          .group(() => {
+            router.get('/', [ProductsController, 'index']).as('product.index')
+            router.post('/', [ProductsController, 'store']).as('product.store')
+            router.put('/:id', [ProductsController, 'update']).as('product.update')
+            router.delete('/:id', [ProductsController, 'destroy']).as('product.destroy')
+          })
+          .prefix('product')
+        router
+          .group(() => {
+            router.post('/', [ProductsController, 'storeTag']).as('tag.store')
+            router
+              .put('/:tag_id/product/:product_id', [ProductsController, 'toggleProductTag'])
+              .as('tag.update')
+            router.delete('/:id', [ProductsController, 'destroyTag']).as('tag.destroy')
+          })
+          .prefix('tag')
+      })
+      .prefix('overview')
 
     router
       .group(() => {
@@ -114,5 +137,7 @@ router
     // .use(middleware.verifyFbWebhookSignature())
 
     router.post('/sinch', [SinchWebhookController, 'post'])
+
+    router.post('/rasa', [BotsController, 'webhook'])
   })
   .prefix('/webhook')

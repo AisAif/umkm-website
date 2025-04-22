@@ -26,7 +26,6 @@ export interface DatasetMutationInterface {
   method: 'post' | 'put'
   title: string
   children: React.ReactNode
-  className?: string
   formContent?: {
     content: string
     intentId?: number
@@ -38,18 +37,15 @@ const DatasetMutation = ({
   url,
   method,
   formContent = { content: '' },
-  className,
 }: DatasetMutationInterface) => {
   const [open, setOpen] = useState(false)
   const form = useForm(formContent)
   const intents = usePage().props.intents as Intent[]
   return (
     <Dialog key={`dialog-${url}`} {...{ open, onOpenChange: setOpen }}>
-      <Button asChild className="my-8">
-        <DialogTrigger className={className}>
+      <DialogTrigger asChild>
           {children}
-        </DialogTrigger>
-      </Button>
+      </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="text-slate-800">Fill The Form</DialogTitle>

@@ -80,7 +80,7 @@ export const columns: ColumnDef<Message>[] = [
                       }}
                     >
                       <div className="flex justify-between items-center gap-2 w-full">
-                        {intent.name}
+                        <span className="max-w-[100px] break-words">{intent.name}</span>
                         <div className="flex gap-2">
                           <button
                             onClick={(e) => {
@@ -136,9 +136,8 @@ export const columns: ColumnDef<Message>[] = [
                 intentId: row.original.intent?.id,
               }}
               key={`edit-${row.original.id}`}
-              className="w-full text-sm py-2"
             >
-              Edit
+              <button className="w-full text-sm py-2">Edit</button>
             </DatasetMutation>
             <DropdownMenuItem>
               <Link

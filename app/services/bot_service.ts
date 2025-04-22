@@ -13,6 +13,7 @@ import Response from '#models/response'
 import Rule from '#models/rule'
 import Story from '#models/story'
 import { MultipartFile } from '@adonisjs/bodyparser'
+import rasaConfig from '#assets/rasa_config_default'
 
 class BotService {
   private ignoredSenderNames = env.get('IGNORED_SENDER_NAMES')?.split(',') ?? []
@@ -42,6 +43,81 @@ class BotService {
   } = {
     onProcess: false,
   }
+
+  private rasaConfigDefault = rasaConfig
+
+  // public defaultCustomActions = ['action_ask_product', 'action_ask_vehicle_model']
+  // public defaultSlots = {
+  //   product_name: {
+  //     type: 'text',
+  //     mappings: [
+  //       {
+  //         type: 'from_entity',
+  //         entity: 'product_name',
+  //       },
+  //       {
+  //         type: 'from_text',
+  //       },
+  //     ],
+  //   },
+  //   vehicle_name: {
+  //     type: 'text',
+  //     mappings: [
+  //       {
+  //         type: 'from_entity',
+  //         entity: 'vehicle_name',
+  //       },
+  //       {
+  //         type: 'from_text',
+  //       },
+  //     ],
+  //   },
+  // }
+  // public defaultIntents = [
+  //   {
+  //     intent: 'ask_product',
+  //     examples: [
+  //       'Ada [Matrix](product_name)?',
+  //       'Gadah [Bi Led](product_name)?',
+  //       'Mau pasang [AES](product_name)',
+  //       'Spesifikasi [LED](product_name)',
+  //       '[Laser](product_name) masih ada?',
+  //     ],
+  //   },
+  //   {
+  //     intent: 'ask_vehicle_model',
+  //     examples: [
+  //       'Untuk mobil [Honda](vehicle_name)?',
+  //       'Untuk motor [Yamaha](vehicle_name)?',
+  //       'Mau pasang untuk [Suzuki](vehicle_name)?',
+  //       '[Vespa](vehicle_name) ada billed apa?',
+  //     ],
+  //   },
+  // ]
+  // public defaultRules = [
+  //   {
+  //     rule: 'Tanya Produk',
+  //     steps: [
+  //       {
+  //         intent: 'ask_product',
+  //       },
+  //       {
+  //         action: 'action_ask_product',
+  //       },
+  //     ],
+  //   },
+  //   {
+  //     rule: 'Tanya Kendaraan',
+  //     steps: [
+  //       {
+  //         intent: 'ask_vehicle_model',
+  //       },
+  //       {
+  //         action: 'action_ask_vehicle_model',
+  //       },
+  //     ],
+  //   },
+  // ]
 
   public async addDataset(rawFile: MultipartFile) {
     if (!rawFile || this.status.onProcess) return
@@ -135,6 +211,7 @@ class BotService {
         .preload('steps', (query) => query.preload('response').preload('intent'))
         .orderBy('name', 'asc')
       const payload = {
+        language: 'id',
         pipeline: [
           {
             name: 'WhitespaceTokenizer',
@@ -147,6 +224,7 @@ class BotService {
           },
           {
             name: 'CountVectorsFeaturizer',
+            analyzer: 'word',
           },
           {
             name: 'CountVectorsFeaturizer',
@@ -168,6 +246,7 @@ class BotService {
           {
             name: 'FallbackClassifier',
             threshold: 0.7,
+            ambiguity_threshold: 0.1,
           },
         ],
         policies: [
@@ -177,11 +256,26 @@ class BotService {
             core_fallback_action_name: 'action_default_fallback',
             enable_fallback_prediction: true,
           },
+          {
+            name: 'MemoizationPolicy',
+          },
+          {
+            name: 'TEDPolicy',
+            max_history: '5',
+            epochs: 100,
+          },
         ],
-        intents: [...intents.map((intent) => intent.name), 'nlu_fallback'],
+        intents: [
+          ...intents.map((intent) => intent.name),
+          ...this.rasaConfigDefault.intents.map((intent) => intent.intent),
+          'nlu_fallback',
+        ],
         // entities: [],
-        // slots: [],
-        actions: ['action_default_fallback'],
+        slots: this.rasaConfigDefault.slots,
+        actions: [
+          'action_default_fallback',
+          ...this.rasaConfigDefault.customActions.map((action) => action),
+        ],
         // forms: [],
         // e2e_actions: [],
         responses: responses.reduce(
@@ -194,14 +288,23 @@ class BotService {
         //   session_expiration_time: 60,
         //   carry_over_slots_to_new_session: true,
         // },
-        nlu: intents.map((intent) => ({
-          intent: intent.name,
-          examples: intent.messages.reduce(
-            (acc, message) =>
-              acc !== '' ? `${acc}\n- ${message.content}` : `- ${message.content}`,
-            ''
-          ),
-        })),
+        nlu: [
+          ...intents.map((intent) => ({
+            intent: intent.name,
+            examples: intent.messages.reduce(
+              (acc, message) =>
+                acc !== '' ? `${acc}\n- ${message.content}` : `- ${message.content}`,
+              ''
+            ),
+          })),
+          ...this.rasaConfigDefault.intents.map((intent) => ({
+            intent: intent.intent,
+            examples: intent.examples.reduce(
+              (acc, message) => (acc !== '' ? `${acc}\n- ${message}` : `- ${message}`),
+              ''
+            ),
+          })),
+        ],
         rules: [
           ...rules.map((rule) => ({
             rule: rule.name,
@@ -214,6 +317,7 @@ class BotService {
               },
             ]),
           })),
+          ...this.rasaConfigDefault.rules,
           {
             rule: 'Activate fallback response',
             steps: [

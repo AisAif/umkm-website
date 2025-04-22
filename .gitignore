@@ -27,3 +27,4 @@ yarn-error.log
 # Other
 ecosystem.config.cjs
 storage/
+assets/rasa_config_default.ts

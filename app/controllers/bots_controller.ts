@@ -11,11 +11,15 @@ import { addStoryValidator, editStoryValidator } from '#validators/story'
 import { addRuleValidator, editRuleValidator } from '#validators/rule'
 import { sendMessageValidator } from '#validators/message'
 import BotService from '#services/bot_service'
+import RasaWebhookService from '#services/rasa_webhook_service'
 // import App from '@adonisjs/core/services/app'
 // import path from 'node:path'
 // import fs from 'node:fs'
 
 export default class BotsController {
+  public async webhook({ request, response }: HttpContext) {
+    return response.json(await RasaWebhookService.webhook(request.body().tracker))
+  }
   public async sendMessage({ session, request, response }: HttpContext) {
     const payload = await request.validateUsing(sendMessageValidator)
     try {

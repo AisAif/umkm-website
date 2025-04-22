@@ -38,9 +38,8 @@ const AddDataset = () => {
               title="Edit"
               url={`/dashboard/bot/dataset/`}
               key={`add-dataset`}
-              className="w-full text-sm py-2"
             >
-              Add
+              <Button className="w-full text-sm py-2">Add</Button>
             </DatasetMutation>
           </TabsContent>
         </Tabs>
