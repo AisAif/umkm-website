@@ -56,6 +56,14 @@ function Chat() {
     form.setData('message', '')
   }
 
+  const linkify = (text: string) => {
+    const urlRegex = /((https?:\/\/[^\s]+))/g
+    return text.replace(
+      urlRegex,
+      '<a href="$1" class="text-blue-500 underline" target="_blank" rel="noopener noreferrer">$1</a>'
+    )
+  }
+
   return (
     <div className="flex flex-col h-[70vh] min-w-[280px] bg-white">
       <div className="bg-slate-800 text-white px-4 py-2">
@@ -68,9 +76,8 @@ function Chat() {
               className={`${
                 message.type === 'message' ? 'bg-green-200' : 'bg-gray-200 ml-auto'
               } text-black rounded-lg py-2 px-4 break-words inline-block max-w-80`}
-            >
-              {message.message}
-            </span>
+              dangerouslySetInnerHTML={{ __html: linkify(message.message) }}
+            />
           </li>
         ))}
         <div ref={messagesEndRef} />

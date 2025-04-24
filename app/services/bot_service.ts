@@ -211,6 +211,7 @@ class BotService {
         .preload('steps', (query) => query.preload('response').preload('intent'))
         .orderBy('name', 'asc')
       const payload = {
+        version: '3.1',
         language: 'id',
         pipeline: [
           {
@@ -236,6 +237,13 @@ class BotService {
             name: 'DIETClassifier',
             epochs: 100,
           },
+          // {
+          //   name: 'RegexEntityExtractor',
+          //   case_sensitive: false,
+          //   use_lookup_tables: true,
+          //   use_regexes: true,
+          //   use_word_boundaries: true,
+          // },
           {
             name: 'EntitySynonymMapper',
           },
@@ -270,7 +278,7 @@ class BotService {
           ...this.rasaConfigDefault.intents.map((intent) => intent.intent),
           'nlu_fallback',
         ],
-        // entities: [],
+        // entities: this.rasaConfigDefault.entities,
         slots: this.rasaConfigDefault.slots,
         actions: [
           'action_default_fallback',
@@ -347,7 +355,7 @@ class BotService {
       this.status.processValue = 30
 
       const result = await this.client.post<IncomingMessage>(
-        '/model/train',
+        '/model/train?force_training=true',
         YAML.stringify(payload),
         {
           responseType: 'stream',

@@ -1,13 +1,14 @@
 export default {
   customActions: ['action_ask_product', 'action_ask_vehicle_model'],
+  entities: ['product_name', 'vehicle_name'],
   slots: {
     product_name: {
       type: 'text',
       mappings: [
-        {
-          type: 'from_entity',
-          entity: 'product_name',
-        },
+        // {
+        //   type: 'from_entity',
+        //   entity: 'product_name',
+        // },
         {
           type: 'from_text',
         },
@@ -16,10 +17,10 @@ export default {
     vehicle_name: {
       type: 'text',
       mappings: [
-        {
-          type: 'from_entity',
-          entity: 'vehicle_name',
-        },
+        // {
+        //   type: 'from_entity',
+        //   entity: 'vehicle_name',
+        // },
         {
           type: 'from_text',
         },
@@ -34,7 +35,7 @@ export default {
         'Gadah [Bi Led](product_name)?',
         'Mau pasang [AES](product_name)',
         'Spesifikasi [LED](product_name)',
-        '[Laser](product_name) masih ada?',
+        'Masih ada [Laser](product_name)?',
       ],
     },
     {
@@ -43,7 +44,7 @@ export default {
         'Untuk mobil [Honda](vehicle_name)?',
         'Untuk motor [Yamaha](vehicle_name)?',
         'Mau pasang untuk [Suzuki](vehicle_name)?',
-        '[Vespa](vehicle_name) ada billed apa?',
+        'Ada billed apa [Vespa](vehicle_name)?',
       ],
     },
   ],

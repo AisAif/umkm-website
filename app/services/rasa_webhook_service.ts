@@ -1,3 +1,4 @@
+import Product from '#models/product'
 import env from '#start/env'
 
 interface Intent {
@@ -75,11 +76,38 @@ class RasaWebhookService {
   }
 
   private async getProduct(entities: Entity[]) {
-    return 'get product'
+    if (entities.length === 0) {
+      return env.get('RASA_DEFAULT_ANSWER')
+    }
+
+    const product = await Product.query().where('name', 'like', `%${entities[0].value}%`).first()
+
+    if (!product) {
+      return `Maaf, produk dengan nama ${entities[0].value} tidak ditemukan. Silahkan cek produk lainnya di ${env.get('APP_URL')}/product`
+    }
+
+    const message = `Mungkin produk yang Anda cari adalah ${product.name} dengan harga mulai dari ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(product.startingPrice)}. Untuk detail produk, silahkan klik link berikut: ${env.get('APP_URL')}/product/${product.id}`
+    return message
   }
 
   private async getProductFromTags(entities: Entity[]) {
-    return 'get product from tags'
+    if (entities.length === 0) {
+      return env.get('RASA_DEFAULT_ANSWER')
+    }
+
+    const product = await Product.query()
+      .whereHas('tags', (query) => {
+        query.where('name', 'like', `%${entities[0].value}%`)
+      })
+      .first()
+
+    if (!product) {
+      return `Maaf, produk dengan spesifikasi ${entities[0].value} tidak ditemukan. Silahkan cek produk lainnya di ${env.get('APP_URL')}/product`
+    }
+
+    const message = `Mungkin produk yang Anda cari adalah ${product.name} dengan harga mulai dari ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(product.startingPrice)}. Untuk detail produk, silahkan klik link berikut: ${env.get('APP_URL')}/product/${product.id}`
+
+    return message
   }
 }
 
