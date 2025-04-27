@@ -33,7 +33,7 @@ export default class ProductsController {
       return response.redirect().toRoute('product.list')
     }
 
-    const products = await Product.query().preload('tags').orderByRaw('RAND()')
+    const products = await Product.query().preload('tags').orderByRaw('RAND()').limit(3)
 
     return inertia.render('product/detail/index', { product, products })
   }

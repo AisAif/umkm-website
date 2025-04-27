@@ -80,7 +80,10 @@ class RasaWebhookService {
       return env.get('RASA_DEFAULT_ANSWER')
     }
 
-    const product = await Product.query().where('name', 'like', `%${entities[0].value}%`).first()
+    const product = await Product.query()
+      .where('name', 'like', `%${entities[0].value}%`)
+      .orWhere('description', 'like', `%${entities[0].value}%`)
+      .first()
 
     if (!product) {
       return `Maaf, produk dengan nama ${entities[0].value} tidak ditemukan. Silahkan cek produk lainnya di ${env.get('APP_URL')}/product`
@@ -96,7 +99,9 @@ class RasaWebhookService {
     }
 
     const product = await Product.query()
-      .whereHas('tags', (query) => {
+      .where('name', 'like', `%${entities[0].value}%`)
+      .orWhere('description', 'like', `%${entities[0].value}%`)
+      .orWhereHas('tags', (query) => {
         query.where('name', 'like', `%${entities[0].value}%`)
       })
       .first()
