@@ -54,7 +54,7 @@ class RasaWebhookService {
         case 'ask_product':
           message = await this.getProduct(tracker.latest_message.entities)
           break
-        case 'ask_vehicle_model':
+        case 'ask_tag_product':
           message = await this.getProductFromTags(tracker.latest_message.entities)
           break
         default:
@@ -80,16 +80,16 @@ class RasaWebhookService {
       return env.get('RASA_DEFAULT_ANSWER')
     }
 
-    const product = await Product.query()
+    const products = await Product.query()
       .where('name', 'like', `%${entities[0].value}%`)
       .orWhere('description', 'like', `%${entities[0].value}%`)
-      .first()
 
-    if (!product) {
+    if (!products.length) {
       return `Maaf, produk dengan nama ${entities[0].value} tidak ditemukan. Silahkan cek produk lainnya di ${env.get('APP_URL')}/product`
     }
 
-    const message = `Mungkin produk yang Anda cari adalah ${product.name} dengan harga mulai dari ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(product.startingPrice)}. Untuk detail produk, silahkan klik link berikut: ${env.get('APP_URL')}/product/${product.id}`
+    // const message = `Mungkin produk yang Anda cari adalah ${product.name} dengan harga mulai dari ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(product.startingPrice)}. Untuk detail produk, silahkan klik link berikut: ${env.get('APP_URL')}/product/${product.id}`
+    const message = `Mungkin produk yang Anda cari adalah sebagai berikut. ${products.map((product, index) => `${index + 1}. ${product.name}: ${env.get('APP_URL')}/product/${product.id}`).join(' ')}`
     return message
   }
 
@@ -98,20 +98,19 @@ class RasaWebhookService {
       return env.get('RASA_DEFAULT_ANSWER')
     }
 
-    const product = await Product.query()
+    const products = await Product.query()
       .where('name', 'like', `%${entities[0].value}%`)
       .orWhere('description', 'like', `%${entities[0].value}%`)
       .orWhereHas('tags', (query) => {
         query.where('name', 'like', `%${entities[0].value}%`)
       })
-      .first()
 
-    if (!product) {
+    if (!products.length) {
       return `Maaf, produk dengan spesifikasi ${entities[0].value} tidak ditemukan. Silahkan cek produk lainnya di ${env.get('APP_URL')}/product`
     }
 
-    const message = `Mungkin produk yang Anda cari adalah ${product.name} dengan harga mulai dari ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(product.startingPrice)}. Untuk detail produk, silahkan klik link berikut: ${env.get('APP_URL')}/product/${product.id}`
-
+    // const message = `Mungkin produk yang Anda cari adalah ${product.name} dengan harga mulai dari ${new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(product.startingPrice)}. Untuk detail produk, silahkan klik link berikut: ${env.get('APP_URL')}/product/${product.id}`
+    const message = `Mungkin produk yang Anda cari adalah sebagai berikut. ${products.map((product, index) => `${index + 1}. ${product.name}: ${env.get('APP_URL')}/product/${product.id}`).join(' ')}`
     return message
   }
 }

@@ -12,6 +12,8 @@ import { addRuleValidator, editRuleValidator } from '#validators/rule'
 import { sendMessageValidator } from '#validators/message'
 import BotService from '#services/bot_service'
 import RasaWebhookService from '#services/rasa_webhook_service'
+import fs from 'node:fs/promises'
+import db from '@adonisjs/lucid/services/db'
 // import App from '@adonisjs/core/services/app'
 // import path from 'node:path'
 // import fs from 'node:fs'
@@ -134,7 +136,19 @@ export default class BotsController {
       return response.redirect().toRoute('bot.dataset.index')
     }
 
-    await existIntent.delete()
+    // // Dissociate all related messages
+    // const messages = await existIntent.related('messages').query()
+    // for (const message of messages) {
+    //   await message.related('intent').dissociate()
+    //   await message.save()
+    // }
+
+    // Hapus intent (pastikan delete tidak silently fail)
+    try {
+      await existIntent.delete()
+    } catch (error) {
+      console.error('Gagal menghapus intent:', error)
+    }
 
     session.flash('message', {
       type: 'success',
@@ -172,6 +186,53 @@ export default class BotsController {
       })
       return response.redirect().toRoute('bot.dataset.index')
     }
+  }
+
+  public async addDatasetViaJson({ session, request, response }: HttpContext) {
+    const files = request.files('files', { extnames: ['json'] })
+    const file = await fs.readFile(files[0].tmpPath!)
+
+    const messages: { content: string; intent: string }[] = JSON.parse(file.toString())
+    for (const message of messages) {
+      await db.transaction(async (trx) => {
+        console.log(message)
+        if (
+          !message.content ||
+          !message.intent ||
+          message.content === '' ||
+          message.intent === ''
+        ) {
+          return
+        }
+
+        let existIntent = await Intent.query({ client: trx }).where('name', message.intent).first()
+        if (!existIntent) {
+          existIntent = new Intent()
+          existIntent.name = message.intent
+          existIntent.useTransaction(trx)
+          await existIntent.save()
+        }
+
+        let existMessage = await Message.query({ client: trx })
+          .where('content', message.content)
+          .first()
+        if (!existMessage) {
+          existMessage = new Message()
+          existMessage.content = message.content
+          existMessage.useTransaction(trx)
+          await existMessage.save()
+        }
+
+        await existMessage.related('intent').associate(existIntent)
+      })
+    }
+
+    session.flash('message', {
+      type: 'success',
+      text: 'Dataset successfully added',
+    })
+
+    return response.redirect().toRoute('bot.dataset.index')
   }
 
   public async getDataset({ inertia, request }: HttpContext) {
@@ -240,9 +301,18 @@ export default class BotsController {
     return response.redirect().toRoute('bot.dataset.index')
   }
 
-  public async addDatasetViaFile({ request, response }: HttpContext) {
-    const files = request.files('files', { extnames: ['zip'] })
-    BotService.addDataset(files[0])
+  public async addDatasetViaFile({ request, response, session }: HttpContext) {
+    try {
+      const files = request.files('files', { extnames: ['zip'] })
+
+      BotService.addDataset(files[0])
+    } catch (error) {
+      console.log(error)
+      session.flash('message', {
+        type: 'error',
+        text: 'Failed to add dataset',
+      })
+    }
     return response.redirect().toRoute('bot.dataset.index')
   }
 

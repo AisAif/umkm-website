@@ -1,75 +1,84 @@
-export default {
-  customActions: ['action_ask_product', 'action_ask_vehicle_model'],
-  entities: ['product_name', 'vehicle_name'],
-  slots: {
-    product_name: {
-      type: 'text',
-      mappings: [
-        // {
-        //   type: 'from_entity',
-        //   entity: 'product_name',
-        // },
-        {
-          type: 'from_text',
-        },
-      ],
+interface DataExample {
+  product_name: string[]
+  tag_name: string[]
+}
+
+export default function (data: DataExample) {
+  return {
+    actions: ['action_ask_product', 'action_ask_tag_product'],
+    entities: ['product_name', 'tag_name'],
+    slots: {
+      product_name: {
+        type: 'text',
+        mappings: [
+          {
+            type: 'from_entity',
+            entity: 'product_name',
+          },
+        ],
+      },
+      tag_name: {
+        type: 'text',
+        mappings: [
+          {
+            type: 'from_entity',
+            entity: 'tag_name',
+          },
+        ],
+      },
     },
-    vehicle_name: {
-      type: 'text',
-      mappings: [
-        // {
-        //   type: 'from_entity',
-        //   entity: 'vehicle_name',
-        // },
-        {
-          type: 'from_text',
-        },
-      ],
-    },
-  },
-  intents: [
-    {
-      intent: 'ask_product',
-      examples: [
-        'Ada [Matrix](product_name)?',
-        'Gadah [Bi Led](product_name)?',
-        'Mau pasang [AES](product_name)',
-        'Spesifikasi [LED](product_name)',
-        'Masih ada [Laser](product_name)?',
-      ],
-    },
-    {
-      intent: 'ask_vehicle_model',
-      examples: [
-        'Untuk mobil [Honda](vehicle_name)?',
-        'Untuk motor [Yamaha](vehicle_name)?',
-        'Mau pasang untuk [Suzuki](vehicle_name)?',
-        'Ada billed apa [Vespa](vehicle_name)?',
-      ],
-    },
-  ],
-  rules: [
-    {
-      rule: 'Tanya Produk',
-      steps: [
-        {
-          intent: 'ask_product',
-        },
-        {
-          action: 'action_ask_product',
-        },
-      ],
-    },
-    {
-      rule: 'Tanya Kendaraan',
-      steps: [
-        {
-          intent: 'ask_vehicle_model',
-        },
-        {
-          action: 'action_ask_vehicle_model',
-        },
-      ],
-    },
-  ],
+    intents: [
+      {
+        lookup: 'product_name',
+        examples: data.product_name,
+      },
+      {
+        lookup: 'tag_name',
+        examples: data.tag_name,
+      },
+      {
+        intent: 'ask_product',
+        examples: [
+          'Ada [Vario](product_name)?',
+          'Gadah [PCX](product_name)?',
+          'Mau pasang [Aerox](product_name)',
+          'Spesifikasi [Beat](product_name)',
+          'Masih ada [Scoopy](product_name)?',
+        ],
+      },
+      {
+        intent: 'ask_tag_product',
+        examples: [
+          'Untuk [Mobil](tag_name) bagusnya apa?',
+          'Untuk [Motor](tag_name) ada rekomendasi?',
+          'Mau pasang yang [RGB](tag_name)?',
+          'Ada billed [PCX](tag_name)?',
+        ],
+      },
+    ],
+    rules: [
+      {
+        rule: 'Tanya Produk',
+        steps: [
+          {
+            intent: 'ask_product',
+          },
+          {
+            action: 'action_ask_product',
+          },
+        ],
+      },
+      {
+        rule: 'Tanya Kendaraan',
+        steps: [
+          {
+            intent: 'ask_tag_product',
+          },
+          {
+            action: 'action_ask_tag_product',
+          },
+        ],
+      },
+    ],
+  }
 }

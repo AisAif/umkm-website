@@ -82,6 +82,9 @@ router
             router
               .post('/add/file', [BotsController, 'addDatasetViaFile'])
               .as('bot.dataset.add.file')
+            router
+              .post('/add/json', [BotsController, 'addDatasetViaJson'])
+              .as('bot.dataset.add.json')
             router.put('/:id', [BotsController, 'editDataset']).as('bot.dataset.edit')
             router.get('/export', [BotsController, 'exportDataset']).as('bot.dataset.export')
             router.delete('/:id', [BotsController, 'deleteDataset']).as('bot.dataset.delete')

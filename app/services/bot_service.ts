@@ -14,6 +14,8 @@ import Rule from '#models/rule'
 import Story from '#models/story'
 import { MultipartFile } from '@adonisjs/bodyparser'
 import rasaConfig from '#assets/rasa_config_default'
+import Product from '#models/product'
+import Tag from '#models/tag'
 
 class BotService {
   private ignoredSenderNames = env.get('IGNORED_SENDER_NAMES')?.split(',') ?? []
@@ -44,7 +46,19 @@ class BotService {
     onProcess: false,
   }
 
-  private rasaConfigDefault = rasaConfig
+  private rasaConfigDefault = rasaConfig({
+    product_name: [],
+    tag_name: [],
+  })
+
+  private initRasaConfig() {
+    Promise.all([Product.all(), Tag.all()]).then(([products, tags]) => {
+      this.rasaConfigDefault = rasaConfig({
+        product_name: products.map((product) => product.name),
+        tag_name: tags.map((tag) => tag.name),
+      })
+    })
+  }
 
   // public defaultCustomActions = ['action_ask_product', 'action_ask_vehicle_model']
   // public defaultSlots = {
@@ -201,6 +215,8 @@ class BotService {
       message: 'Training model',
     }
 
+    this.initRasaConfig()
+
     try {
       const intents = await Intent.query().preload('messages').orderBy('name', 'asc')
       const responses = await Response.query().orderBy('name', 'asc')
@@ -275,14 +291,16 @@ class BotService {
         ],
         intents: [
           ...intents.map((intent) => intent.name),
-          ...this.rasaConfigDefault.intents.map((intent) => intent.intent),
+          ...this.rasaConfigDefault.intents
+            .filter((intent) => !!intent.intent)
+            .map((intent) => intent.intent),
           'nlu_fallback',
         ],
-        // entities: this.rasaConfigDefault.entities,
+        entities: this.rasaConfigDefault.entities,
         slots: this.rasaConfigDefault.slots,
         actions: [
           'action_default_fallback',
-          ...this.rasaConfigDefault.customActions.map((action) => action),
+          ...this.rasaConfigDefault.actions.map((action) => action),
         ],
         // forms: [],
         // e2e_actions: [],
@@ -306,7 +324,7 @@ class BotService {
             ),
           })),
           ...this.rasaConfigDefault.intents.map((intent) => ({
-            intent: intent.intent,
+            ...intent,
             examples: intent.examples.reduce(
               (acc, message) => (acc !== '' ? `${acc}\n- ${message}` : `- ${message}`),
               ''
