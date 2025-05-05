@@ -1,6 +1,6 @@
-import { useForm } from '@inertiajs/react'
+import { useForm, usePage } from '@inertiajs/react'
 import QueryString from 'qs'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Input } from '~/components/ui/input'
 import { useDebounce } from 'use-debounce'
 import {
@@ -11,12 +11,23 @@ import {
   SelectValue,
 } from '~/components/ui/select'
 import { Button } from '~/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '~/components/ui/dialog'
 
 const DatasetFilter = () => {
   const initialQuery = QueryString.parse(window.location.search, { ignoreQueryPrefix: true }) as {
     type: string
     search: string
+    intent_id: string
   }
+  const intents = usePage().props.intents as { id: number; name: string }[]
 
   const filterForm = useForm({
     ...initialQuery,
@@ -28,19 +39,37 @@ const DatasetFilter = () => {
   useEffect(() => {
     if (
       filterForm.data.type === initialQuery.type &&
-      filterForm.data.search === initialQuery.search
+      filterForm.data.search === initialQuery.search &&
+      filterForm.data.intent_id === initialQuery.intent_id
     )
       return
-    filterForm.get('/dashboard/bot/dataset', {
-      preserveState: true,
-    })
-  }, [filterForm.data.type, searchDebounce])
+    filterForm.get('/dashboard/bot/dataset')
+  }, [filterForm.data.type, searchDebounce, filterForm.data.intent_id])
 
   return (
     <div className="flex gap-2">
+      <OptimizeDialog />
       <Button asChild>
         <a href="/dashboard/bot/dataset/export">Export Unlabeled</a>
       </Button>
+      <Select
+        onValueChange={(filter) => {
+          filterForm.setData('intent_id', filter)
+        }}
+        value={filterForm.data.intent_id}
+      >
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="Intent" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All</SelectItem>
+          {intents.map((intent) => (
+            <SelectItem key={intent.id} value={intent.id.toString()}>
+              {intent.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       <Select
         onValueChange={(filter) => {
           filterForm.setData('type', filter)
@@ -63,6 +92,41 @@ const DatasetFilter = () => {
         placeholder="Search"
       />
     </div>
+  )
+}
+
+const OptimizeDialog = () => {
+  const [open, setOpen] = useState(false)
+  const form = useForm()
+  return (
+    <Dialog {...{ open, onOpenChange: setOpen }}>
+      <DialogTrigger>
+        <Button>Optimize</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-[800px]">
+        <DialogHeader>
+          <DialogTitle className="text-slate-800">Optimize Dataset</DialogTitle>
+        </DialogHeader>
+        <DialogDescription>Do you really want to optimize the dataset?</DialogDescription>
+        <DialogFooter>
+          <Button
+            onClick={(e) => {
+              console.log('optimize')
+              e.preventDefault()
+
+              form.put('/dashboard/bot/dataset/optimize', {
+                onSuccess: () => {
+                  setOpen(false)
+                },
+                preserveState: false,
+              })
+            }}
+          >
+            Yes
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 

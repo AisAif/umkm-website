@@ -78,6 +78,7 @@ router
         router
           .group(() => {
             router.get('/', [BotsController, 'getDataset']).as('bot.dataset.index')
+            router.put('/optimize', [BotsController, 'optimizeDataset']).as('bot.dataset.optimize')
             router.post('/', [BotsController, 'addDataset']).as('bot.dataset.add')
             router
               .post('/add/file', [BotsController, 'addDatasetViaFile'])

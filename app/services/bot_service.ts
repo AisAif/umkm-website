@@ -500,6 +500,69 @@ class BotService {
 
     return result
   }
+
+  public async optimizeDataset() {
+    if (this.status.name === 'optimize' && this.status.onProcess) {
+      console.log('Dataset is under optimizing')
+      return
+    }
+
+    try {
+      this.status = {
+        onProcess: true,
+        processValue: 10,
+        success: undefined,
+        name: 'optimize',
+      }
+      const message = await Message.all()
+      const deletedIds: number[] = []
+      for (const [index, msg] of message.entries()) {
+        if (deletedIds.includes(msg.id)) {
+          continue
+        }
+        const duplicate = await Message.query()
+          .where('content', msg.content)
+          .where('id', '!=', msg.id)
+
+        if (duplicate.length > 1) {
+          for (const duplicateMsg of duplicate) {
+            deletedIds.push(duplicateMsg.id)
+            await duplicateMsg.delete()
+          }
+        }
+
+        const text = msg.content
+        let cleaned = text.toLowerCase()
+
+        cleaned = cleaned.replace(/[^a-z\s]/g, '')
+
+        cleaned = cleaned.replace(/\s+/g, ' ').trim()
+
+        msg.content = cleaned
+        await msg.save()
+
+        this.status.processValue = ((index + 1) / message.length) * 90 + 10
+      }
+
+      console.log(`Dataset optimized, ${deletedIds.length} duplicate messages deleted`)
+
+      this.status = {
+        onProcess: false,
+        processValue: undefined,
+        success: true,
+        name: 'optimize',
+      }
+    } catch (error) {
+      console.log(error)
+
+      this.status = {
+        name: 'optimize',
+        onProcess: false,
+        processValue: undefined,
+        success: false,
+      }
+    }
+  }
 }
 
 export default new BotService()

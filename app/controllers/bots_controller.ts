@@ -22,6 +22,7 @@ export default class BotsController {
   public async webhook({ request, response }: HttpContext) {
     return response.json(await RasaWebhookService.webhook(request.body().tracker))
   }
+
   public async sendMessage({ session, request, response }: HttpContext) {
     const payload = await request.validateUsing(sendMessageValidator)
     try {
@@ -154,7 +155,7 @@ export default class BotsController {
       type: 'success',
       text: 'Intent successfully deleted',
     })
-    return response.redirect().toRoute('bot.dataset.index')
+    return response.redirect().back()
   }
 
   public async addMessageToIntent({ session, request, response }: HttpContext) {
@@ -178,14 +179,21 @@ export default class BotsController {
         type: 'success',
         text: 'Message successfully added to intent',
       })
-      return response.redirect().toRoute('bot.dataset.index')
     } catch (error) {
       session.flash('message', {
         type: 'error',
         text: 'Failed to add message to intent',
       })
-      return response.redirect().toRoute('bot.dataset.index')
     }
+
+    const referer = request.headers().referer
+    if (referer) {
+      const url = new URL(referer)
+      console.log(url)
+      return response.redirect(url.toString())
+    }
+
+    return response.redirect().toRoute('bot.dataset.index')
   }
 
   public async addDatasetViaJson({ session, request, response }: HttpContext) {
@@ -253,6 +261,12 @@ export default class BotsController {
         }
         return
       })
+      .where((query) => {
+        if (request.input('intent_id') && request.input('intent_id') !== 'all') {
+          return query.where('intent_id', request.input('intent_id'))
+        }
+        return
+      })
       .orderBy('created_at', 'desc')
       .preload('intent')
       .paginate(request.input('page', 1), 10)
@@ -260,6 +274,11 @@ export default class BotsController {
     const intents = await Intent.query().orderBy('name', 'asc')
 
     return inertia.render('dashboard/bot/dataset/index', { datasets, intents })
+  }
+
+  public async optimizeDataset({ response }: HttpContext) {
+    BotService.optimizeDataset()
+    return response.redirect().toRoute('bot.dataset.index')
   }
 
   public async exportDataset({ request, response }: HttpContext) {
