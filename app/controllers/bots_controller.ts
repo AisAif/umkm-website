@@ -231,6 +231,7 @@ export default class BotsController {
 
         let existIntent = await Intent.query({ client: trx }).where('name', message.intent).first()
         if (!existIntent) {
+          console.log(`intent ${message.intent} not found, creating...`)
           existIntent = new Intent()
           existIntent.name = message.intent
           existIntent.useTransaction(trx)
@@ -241,6 +242,7 @@ export default class BotsController {
           .where('content', message.content)
           .first()
         if (!existMessage) {
+          console.log(`message ${message.content} not found, creating...`)
           existMessage = new Message()
           existMessage.content = message.content
           existMessage.useTransaction(trx)

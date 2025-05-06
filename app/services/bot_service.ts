@@ -514,20 +514,27 @@ class BotService {
         success: undefined,
         name: 'optimize',
       }
-      const message = await Message.all()
+      const messages = await Message.all()
       const deletedIds: number[] = []
-      for (const [index, msg] of message.entries()) {
+      for (let [index, msg] of messages.entries()) {
         if (deletedIds.includes(msg.id)) {
           continue
         }
         const duplicate = await Message.query()
           .where('content', msg.content)
           .where('id', '!=', msg.id)
+        // console.log('duplicate:', duplicate.length)
 
-        if (duplicate.length > 1) {
-          for (const duplicateMsg of duplicate) {
-            deletedIds.push(duplicateMsg.id)
-            await duplicateMsg.delete()
+        if (duplicate.length > 0) {
+          if (!msg.intentId) {
+            await msg.delete()
+            deletedIds.push(msg.id)
+            continue
+          }
+
+          for (const dupMsg of duplicate) {
+            await dupMsg.delete()
+            deletedIds.push(dupMsg.id)
           }
         }
 
@@ -541,7 +548,7 @@ class BotService {
         msg.content = cleaned
         await msg.save()
 
-        this.status.processValue = ((index + 1) / message.length) * 90 + 10
+        this.status.processValue = ((index + 1) / messages.length) * 90 + 10
       }
 
       console.log(`Dataset optimized, ${deletedIds.length} duplicate messages deleted`)
