@@ -124,6 +124,14 @@ export default class BotsController {
       type: 'success',
       text: 'Intent successfully added',
     })
+
+    const referer = request.headers().referer
+    if (referer) {
+      const url = new URL(referer)
+      console.log(url)
+      return response.redirect(url.toString())
+    }
+
     return response.redirect().toRoute('bot.dataset.index')
   }
 
@@ -155,7 +163,15 @@ export default class BotsController {
       type: 'success',
       text: 'Intent successfully deleted',
     })
-    return response.redirect().back()
+
+    const referer = request.headers().referer
+    if (referer) {
+      const url = new URL(referer)
+      console.log(url)
+      return response.redirect(url.toString())
+    }
+
+    return response.redirect().toRoute('bot.dataset.index')
   }
 
   public async addMessageToIntent({ session, request, response }: HttpContext) {
@@ -276,8 +292,16 @@ export default class BotsController {
     return inertia.render('dashboard/bot/dataset/index', { datasets, intents })
   }
 
-  public async optimizeDataset({ response }: HttpContext) {
+  public async optimizeDataset({ request, response }: HttpContext) {
     BotService.optimizeDataset()
+
+    const referer = request.headers().referer
+    if (referer) {
+      const url = new URL(referer)
+      console.log(url)
+      return response.redirect(url.toString())
+    }
+
     return response.redirect().toRoute('bot.dataset.index')
   }
 
@@ -355,6 +379,13 @@ export default class BotsController {
       text: 'Dataset successfully updated',
     })
 
+    const referer = request.headers().referer
+    if (referer) {
+      const url = new URL(referer)
+      console.log(url)
+      return response.redirect(url.toString())
+    }
+
     return response.redirect().toRoute('bot.dataset.index')
   }
 
@@ -375,6 +406,14 @@ export default class BotsController {
       type: 'success',
       text: 'Message successfully deleted',
     })
+
+    const referer = request.headers().referer
+    if (referer) {
+      const url = new URL(referer)
+      console.log(url)
+      return response.redirect(url.toString())
+    }
+
     return response.redirect().toRoute('bot.dataset.index')
   }
 
