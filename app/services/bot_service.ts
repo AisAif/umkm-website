@@ -218,7 +218,10 @@ class BotService {
     this.initRasaConfig()
 
     try {
-      const intents = await Intent.query().preload('messages').orderBy('name', 'asc')
+      const intents = await Intent.query()
+        .preload('messages')
+        .orderBy('name', 'asc')
+        .where('name', '!=', 'unknown')
       const responses = await Response.query().orderBy('name', 'asc')
       const rules = await Rule.query()
         .preload('steps', (query) => query.preload('response').preload('intent'))
