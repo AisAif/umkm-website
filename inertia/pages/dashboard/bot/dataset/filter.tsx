@@ -49,9 +49,8 @@ const DatasetFilter = () => {
   return (
     <div className="flex gap-2">
       <OptimizeDialog />
-      <Button asChild>
-        <a href="/dashboard/bot/dataset/export">Export Unlabeled</a>
-      </Button>
+      <ExportUnlabeledDialog />
+
       <Select
         onValueChange={(filter) => {
           filterForm.setData('intent_id', filter)
@@ -92,6 +91,43 @@ const DatasetFilter = () => {
         placeholder="Search"
       />
     </div>
+  )
+}
+
+const ExportUnlabeledDialog = () => {
+  const [open, setOpen] = useState(false)
+  const form = useForm({
+    total: '50',
+  })
+  return (
+    <Dialog {...{ open, onOpenChange: setOpen }}>
+      <DialogTrigger asChild>
+        <Button>Export Unlabeled</Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Export Dataset</DialogTitle>
+        </DialogHeader>
+        <form>
+          <div className="flex flex-col gap-2">
+            <label htmlFor="total">Total</label>
+            <Input
+              name="total"
+              type="number"
+              value={form.data.total}
+              onChange={(e) => form.setData('total', e.target.value)}
+              placeholder="Total"
+            />
+          </div>
+        </form>
+        <DialogFooter>
+          <Button onClick={() => setOpen(false)}>Cancel</Button>
+          <Button asChild>
+            <a href={'/dashboard/bot/dataset/export?total=' + form.data.total}>Export</a>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
