@@ -285,7 +285,7 @@ class BotService {
           },
           {
             name: 'TEDPolicy',
-            max_history: '5',
+            max_history: 5,
             epochs: 100,
           },
         ],
