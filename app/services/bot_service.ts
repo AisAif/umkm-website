@@ -372,6 +372,16 @@ class BotService {
 
       this.status.processValue = 30
 
+      const unloadResult = await this.client.delete('/model')
+      if (unloadResult.status >= 300) {
+        throw new Error(`Something went wrong, status code: ${unloadResult.status}`)
+      }
+
+      await BotModel.query().update({ isActive: false })
+
+      // freeze 10 seconds
+      await new Promise((resolve) => setTimeout(resolve, 10000))
+
       const result = await this.client.post<IncomingMessage>(
         '/model/train?force_training=true',
         YAML.stringify(payload),
