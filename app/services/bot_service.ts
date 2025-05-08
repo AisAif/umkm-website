@@ -254,7 +254,7 @@ class BotService {
           },
           {
             name: 'DIETClassifier',
-            epochs: 100,
+            epochs: 25,
           },
           // {
           //   name: 'RegexEntityExtractor',
@@ -268,7 +268,7 @@ class BotService {
           },
           {
             name: 'ResponseSelector',
-            epochs: 100,
+            epochs: 25,
           },
           {
             name: 'FallbackClassifier',
@@ -289,7 +289,7 @@ class BotService {
           {
             name: 'TEDPolicy',
             max_history: 5,
-            epochs: 100,
+            epochs: 25,
           },
         ],
         intents: [
