@@ -254,7 +254,7 @@ class BotService {
           },
           {
             name: 'DIETClassifier',
-            epochs: 25,
+            epochs: 100,
           },
           // {
           //   name: 'RegexEntityExtractor',
@@ -272,7 +272,7 @@ class BotService {
           },
           {
             name: 'FallbackClassifier',
-            threshold: 0.7,
+            threshold: 0.5,
             ambiguity_threshold: 0.1,
           },
         ],
