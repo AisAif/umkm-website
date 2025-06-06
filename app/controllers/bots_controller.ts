@@ -31,15 +31,29 @@ export default class BotsController {
         sender: payload.sender,
       })
 
-      session.flash('message', {
-        type: 'success',
-        text: result.data[0].text,
-      })
+      const messages = [
+        {
+          type: 'success',
+          text: result.data[0].text,
+        },
+      ]
+
+      if (Math.random() < 0.4) {
+        const suggestion = await BotService.getSuggestion()
+        messages.push({
+          type: 'info',
+          text: suggestion,
+        })
+      }
+      // console.log(messages)
+      session.flash('messages', messages)
     } catch (error) {
-      session.flash('message', {
-        type: 'error',
-        text: 'Failed to send message',
-      })
+      session.flash('messages', [
+        {
+          type: 'error',
+          text: 'Failed to send message',
+        },
+      ])
     }
     return response.redirect().back()
   }

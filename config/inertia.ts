@@ -15,6 +15,7 @@ const inertiaConfig = defineConfig({
   sharedData: {
     appName: () => env.get('VITE_APP_NAME'),
     message: (ctx) => ctx.session?.flashMessages.get('message'),
+    messages: (ctx) => ctx.session?.flashMessages.get('messages'),
     errors: (ctx) => ctx.session?.flashMessages.get('errors'),
     user: (ctx) => ctx.auth?.user,
   },
@@ -37,5 +38,9 @@ declare module '@adonisjs/inertia/types' {
       type: 'success' | 'error'
       text: string
     }
+    messages: {
+      type: 'success' | 'error' | 'info'
+      text: string
+    }[]
   }
 }

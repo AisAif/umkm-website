@@ -36,20 +36,21 @@ function Chat() {
     setMessages((prevMessages) => [...prevMessages, { type: 'answer', message: form.data.message }])
     form.post('/send-message', {
       onSuccess: (page) => {
+        const flashMessages = page.props.messages as {
+          text: string
+          type: 'success' | 'error' | 'info'
+        }[]
+
+        if (!flashMessages || !Array.isArray(flashMessages)) return
         setMessages((prevMessages) => [
           ...prevMessages,
-          {
+          ...flashMessages.map((msg) => ({
             type: 'message',
-            message: (() => {
-              console.log(page.props.message)
-              const message = page.props.message as { text: string; type: 'success' | 'error' }
-              if (message.type === 'success') {
-                return message.text
-              } else {
-                return 'Maaf, saya tidak bisa menjawab pertanyaanmu'
-              }
-            })(),
-          },
+            message:
+              msg.type === 'success' || msg.type === 'info'
+                ? msg.text
+                : 'Maaf, saya tidak bisa menjawab pertanyaanmu',
+          })),
         ])
       },
     })

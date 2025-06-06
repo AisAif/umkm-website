@@ -256,13 +256,6 @@ class BotService {
             name: 'DIETClassifier',
             epochs: 100,
           },
-          // {
-          //   name: 'RegexEntityExtractor',
-          //   case_sensitive: false,
-          //   use_lookup_tables: true,
-          //   use_regexes: true,
-          //   use_word_boundaries: true,
-          // },
           {
             name: 'EntitySynonymMapper',
           },
@@ -512,6 +505,15 @@ class BotService {
     }
 
     return result
+  }
+
+  public async getSuggestion() {
+    const rules = await Rule.all()
+    const stories = await Story.all()
+    const topics = [...rules.map((rule) => rule.name), ...stories.map((story) => story.name)]
+    const randomTopics = topics.sort(() => Math.random() - 0.5).slice(0, 5)
+    const message = `Orang lain juga bertanya: ${randomTopics.join(', ')}`
+    return message
   }
 
   public async optimizeDataset() {

@@ -70,6 +70,29 @@ export default class FacebookWebhooksController {
             console.warn(error.response?.data)
           }
         }
+
+        // send suggestions
+        if (Math.random() < 0.4) {
+          try {
+            const suggestion = await BotService.getSuggestion()
+            await this.client.post(
+              `${this.facebookConfig.pageId}/messages?access_token=${this.facebookConfig.accessToken}`,
+              {
+                recipient: {
+                  id: senderId,
+                },
+                message_type: 'RESPONSE',
+                message: {
+                  text: suggestion,
+                },
+              }
+            )
+          } catch (error) {
+            if (error instanceof AxiosError) {
+              console.warn(error.response?.data)
+            }
+          }
+        }
       })
     } else if (body.object === 'instagram') {
       this.handleFacebookMessage(body, async (senderId, message) => {

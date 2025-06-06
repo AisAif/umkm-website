@@ -68,6 +68,24 @@ export default class SinchWebhooksController {
     }
 
     console.log(result?.data)
+
+    // send suggestions
+    if (Math.random() < 0.4) {
+      try {
+        sendMessage.message.text_message.text = await BotService.getSuggestion()
+        result = await this.client.post(this.sinchConfig.projectId + '/messages:send', {
+          sendMessage,
+        })
+      } catch (error) {
+        if (error instanceof AxiosError) {
+          console.warn(error.response?.data)
+        }
+
+        response.send('Could not process request')
+        return
+      }
+    }
+
     response.send('Ok')
   }
 }
