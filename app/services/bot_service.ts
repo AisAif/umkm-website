@@ -13,7 +13,7 @@ import Response from '#models/response'
 import Rule from '#models/rule'
 import Story from '#models/story'
 import { MultipartFile } from '@adonisjs/bodyparser'
-import rasaConfig from '#assets/rasa_config_default'
+import rasaConfig from '#config/rasa'
 import Product from '#models/product'
 import Tag from '#models/tag'
 
