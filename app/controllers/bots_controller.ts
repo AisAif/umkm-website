@@ -44,6 +44,14 @@ export default class BotsController {
           type: 'info',
           text: suggestion,
         })
+      } else {
+        const uatMessage = await BotService.getUAT()
+        if (Math.random() < 0.6 && uatMessage) {
+          messages.push({
+            type: 'info',
+            text: uatMessage,
+          })
+        }
       }
       // console.log(messages)
       session.flash('messages', messages)

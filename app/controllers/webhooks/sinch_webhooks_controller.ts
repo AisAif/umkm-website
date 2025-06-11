@@ -84,6 +84,23 @@ export default class SinchWebhooksController {
         response.send('Could not process request')
         return
       }
+    } else {
+      const uatMessage = await BotService.getUAT()
+      if (Math.random() < 0.6 && uatMessage) {
+        try {
+          sendMessage.message.text_message.text = uatMessage
+          result = await this.client.post(this.sinchConfig.projectId + '/messages:send', {
+            sendMessage,
+          })
+        } catch (error) {
+          if (error instanceof AxiosError) {
+            console.warn(error.response?.data)
+          }
+
+          response.send('Could not process request')
+          return
+        }
+      }
     }
 
     response.send('Ok')

@@ -56,4 +56,6 @@ export default await Env.create(new URL('../', import.meta.url), {
 
   IGNORED_SENDER_NAMES: Env.schema.string.optional(),
   VITE_APP_NAME: Env.schema.string(),
+
+  UAT_URL: Env.schema.string.optional(),
 })

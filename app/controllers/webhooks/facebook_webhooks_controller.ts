@@ -92,6 +92,28 @@ export default class FacebookWebhooksController {
               console.warn(error.response?.data)
             }
           }
+        } else {
+          const uatMessage = await BotService.getUAT()
+          if (Math.random() < 0.6 && uatMessage) {
+            try {
+              await this.client.post(
+                `${this.facebookConfig.pageId}/messages?access_token=${this.facebookConfig.accessToken}`,
+                {
+                  recipient: {
+                    id: senderId,
+                  },
+                  message_type: 'RESPONSE',
+                  message: {
+                    text: uatMessage,
+                  },
+                }
+              )
+            } catch (error) {
+              if (error instanceof AxiosError) {
+                console.warn(error.response?.data)
+              }
+            }
+          }
         }
       })
     } else if (body.object === 'instagram') {

@@ -516,6 +516,13 @@ class BotService {
     return message
   }
 
+  public async getUAT() {
+    const url = env.get('UAT_URL')
+    if (!url) return
+    const text = `Halo! Kami sangat menghargai bantuan Anda untuk menguji chatbot baru Obex Customlamp. Chatbot ini dirancang untuk membantu Anda menemukan informasi tentang produk kami dan pertanyaan umum. Anda bisa mengisi formulir di link berikut: ${url}`
+    return text
+  }
+
   public async optimizeDataset() {
     if (this.status.name === 'optimize' && this.status.onProcess) {
       console.log('Dataset is under optimizing')
