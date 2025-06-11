@@ -53,18 +53,21 @@ export default class FacebookWebhooksController {
     if (body.object === 'page') {
       this.handleFacebookMessage(body, async (senderId, message) => {
         try {
-          await this.client.post(
+          const messageBody = {
+            recipient: {
+              id: senderId,
+            },
+            message_type: 'RESPONSE',
+            message: {
+              text: message,
+            },
+          }
+          console.log({ messageBody })
+          const result = await this.client.post(
             `${this.facebookConfig.pageId}/messages?access_token=${this.facebookConfig.accessToken}`,
-            {
-              recipient: {
-                id: senderId,
-              },
-              message_type: 'RESPONSE',
-              message: {
-                text: message,
-              },
-            }
+            messageBody
           )
+          console.log({ result })
         } catch (error) {
           if (error instanceof AxiosError) {
             console.warn(error.response?.data)
