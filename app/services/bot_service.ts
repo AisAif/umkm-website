@@ -17,6 +17,60 @@ import rasaConfig from '#config/rasa'
 import Product from '#models/product'
 import Tag from '#models/tag'
 
+interface IntentWithMessages {
+  id: number
+  name: string
+  messages: Message[]
+}
+
+export interface AverageMetrics {
+  'precision': number
+  'recall': number
+  'f1-score': number
+  'support': number
+}
+
+interface ConfusedWith {
+  [key: string]: number
+}
+
+export interface IntentMetrics {
+  'precision': number
+  'recall': number
+  'f1-score': number
+  'support': number
+  'confused_with': ConfusedWith
+}
+
+interface EvaluationData {
+  intent_evaluation: {
+    predictions: {
+      text: string
+      intent: string
+      predicted: string
+      confidence: number
+    }[]
+    report: {
+      [key: string]: IntentMetrics | AverageMetrics | number // Bisa berupa metrik niat atau rata-rata
+      'accuracy': number
+      'macro avg': AverageMetrics
+      'weighted avg': AverageMetrics
+      'micro avg': AverageMetrics
+    }
+    precision: number
+    f1_score: number
+    accuracy: number
+    errors: {
+      text: string
+      intent: string
+      intent_prediction: {
+        name: string
+        confidence: number
+      }
+    }[]
+  }
+}
+
 class BotService {
   private ignoredSenderNames = env.get('IGNORED_SENDER_NAMES')?.split(',') ?? []
 
@@ -222,6 +276,39 @@ class BotService {
         .preload('messages')
         .orderBy('name', 'asc')
         .where('name', '!=', 'unknown')
+      let trainIntentWithMessages: IntentWithMessages[] = []
+      let testIntentWithMessages: IntentWithMessages[] = []
+
+      for (const intent of intents) {
+        // const shuffledMessages = [...intent.messages].sort(() => 0.5 - Math.random())
+
+        const totalMessages = intent.messages.length
+        const trainCount = Math.ceil(totalMessages * 0.8)
+
+        const trainMessages = intent.messages.slice(0, trainCount)
+        const testMessages = intent.messages.slice(trainCount)
+
+        if (trainMessages.length > 0) {
+          trainIntentWithMessages.push({
+            id: intent.id,
+            name: intent.name,
+            messages: trainMessages,
+          })
+        }
+        if (testMessages.length > 0) {
+          testIntentWithMessages.push({ id: intent.id, name: intent.name, messages: testMessages })
+        }
+      }
+
+      // console.dir(
+      //   trainIntentWithMessages.map((intent) => intent.name),
+      //   { depth: null }
+      // )
+      // console.dir(
+      //   testIntentWithMessages.map((intent) => intent.name),
+      //   { depth: null }
+      // )
+
       const responses = await Response.query().orderBy('name', 'asc')
       const rules = await Rule.query()
         .preload('steps', (query) => query.preload('response').preload('intent'))
@@ -311,7 +398,7 @@ class BotService {
         //   carry_over_slots_to_new_session: true,
         // },
         nlu: [
-          ...intents.map((intent) => ({
+          ...trainIntentWithMessages.map((intent) => ({
             intent: intent.name,
             examples: intent.messages.reduce(
               (acc, message) =>
@@ -379,7 +466,7 @@ class BotService {
       await new Promise((resolve) => setTimeout(resolve, 10000))
 
       const result = await this.client.post<IncomingMessage>(
-        '/model/train?force_training=true',
+        '/model/train',
         YAML.stringify(payload),
         {
           responseType: 'stream',
@@ -411,11 +498,47 @@ class BotService {
         console.log('model saved')
         this.status.processValue = 80
 
-        await BotModel.query().update({ isActive: false })
-        await BotModel.create({
+        const model = await BotModel.create({
           name: result.headers.filename,
           isActive: true,
         })
+
+        await this.activateModel(model.id)
+
+        try {
+          const testBody = testIntentWithMessages.flatMap((intent) => {
+            return intent.messages.map((message) => ({
+              text: message.content,
+              intent: intent.name,
+              entities: [],
+            }))
+          })
+          console.dir(testBody, { depth: null })
+          const testResult = await this.client.post(`/model/test/intents`, {
+            rasa_nlu_data: {
+              common_examples: testBody,
+            },
+          })
+          if (testResult.data) {
+            const fileContent = JSON.stringify(testResult.data, null, 2)
+            const testReadableStream = new Readable()
+            testReadableStream.push(fileContent)
+            testReadableStream.push(null)
+            const testContentLength = Buffer.byteLength(fileContent, 'utf8')
+            this.status.processValue = 90
+            await drive
+              .use('s3')
+              .putStream(
+                `${env.get('NODE_ENV')}/${(result.headers.filename as string).replace('.tar.gz', '.json')}`,
+                testReadableStream,
+                {
+                  contentLength: testContentLength,
+                }
+              )
+          }
+        } catch (error) {
+          console.log(error)
+        }
 
         this.status = {
           name: 'train',
@@ -433,6 +556,45 @@ class BotService {
         processValue: undefined,
         success: false,
       }
+    }
+  }
+
+  public async getEvaluation(modelName: string): Promise<EvaluationData | null> {
+    try {
+      // Mengambil stream dari S3. Pastikan konfigurasi 's3' di config/drive.ts sudah benar.
+      const data: Readable = await drive
+        .use('s3')
+        .getStream(`${env.get('NODE_ENV')}/${modelName}.json`)
+
+      let fileContent = ''
+      // Mengembalikan Promise agar kita bisa menunggu data stream selesai dibaca
+      const parsedData: EvaluationData = await new Promise((resolve, reject) => {
+        data.on('data', (chunk: Buffer) => {
+          fileContent += chunk.toString('utf8') // Menggabungkan chunk menjadi string
+        })
+
+        data.on('end', () => {
+          try {
+            // Memastikan data valid JSON sebelum di-parse
+            const result = JSON.parse(fileContent) as EvaluationData
+            resolve(result)
+          } catch (parseError) {
+            console.error(`Error parsing JSON for model ${modelName}:`, parseError)
+            reject(new Error(`Failed to parse JSON for model ${modelName}`))
+          }
+        })
+
+        data.on('error', (streamError) => {
+          console.error(`Stream error for model ${modelName}:`, streamError)
+          reject(new Error(`Stream read failed for model ${modelName}`))
+        })
+      })
+
+      return parsedData
+    } catch (error) {
+      // Tangani error dari drive.getStream atau dari Promise reject
+      console.error(`Error getting evaluation for model ${modelName}:`, error)
+      return null
     }
   }
 
@@ -498,13 +660,15 @@ class BotService {
       message: message,
     })
 
-    if (result.data[0].text === env.get('RASA_DEFAULT_ANSWER')) {
+    const resMessage: string | undefined = result.data?.[0]?.text
+
+    if (resMessage === env.get('RASA_DEFAULT_ANSWER')) {
       await Message.create({
         content: message,
       })
     }
 
-    return result
+    return resMessage || env.get('RASA_DEFAULT_ANSWER')
   }
 
   public async getSuggestion() {

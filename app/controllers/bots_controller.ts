@@ -34,7 +34,7 @@ export default class BotsController {
       const messages = [
         {
           type: 'success',
-          text: result.data[0].text,
+          text: result,
         },
       ]
 
@@ -97,6 +97,19 @@ export default class BotsController {
   public async trainModel({ response }: HttpContext) {
     BotService.trainModel()
 
+    return response.redirect().toRoute('bot.model.index')
+  }
+
+  public async evaluation({ response, inertia, request, session }: HttpContext) {
+    const name = request.param('name')
+    const data = await BotService.getEvaluation(name)
+    if (data) {
+      return inertia.render('dashboard/bot/model/evaluation/index', { data })
+    }
+    session.flash('message', {
+      type: 'error',
+      text: 'Model evaluation data not found',
+    })
     return response.redirect().toRoute('bot.model.index')
   }
 

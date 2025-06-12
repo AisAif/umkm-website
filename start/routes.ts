@@ -69,6 +69,9 @@ router
         router
           .group(() => {
             router.get('/', [BotsController, 'index']).as('bot.model.index')
+            router
+              .get('/:name/evaluation', [BotsController, 'evaluation'])
+              .as('bot.model.evaluation')
             router.put('/:id/activate', [BotsController, 'activate']).as('bot.model.activate')
             router.post('/train', [BotsController, 'trainModel']).as('bot.model.train')
             router.get('/status', [BotsController, 'status']).as('bot.model.status')

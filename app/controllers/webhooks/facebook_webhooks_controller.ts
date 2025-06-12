@@ -36,7 +36,7 @@ export default class FacebookWebhooksController {
           message: webhookEvent.message.text,
           sender,
         })
-        callback(senderId, result.data[0]?.text)
+        callback(senderId, result)
       }
     })
   }

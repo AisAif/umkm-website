@@ -48,7 +48,7 @@ export default class SinchWebhooksController {
       },
       message: {
         text_message: {
-          text: botResult.data[0].text,
+          text: botResult,
         },
       },
       channel_priority_order: [requestBody.message.channel_identity.channel],

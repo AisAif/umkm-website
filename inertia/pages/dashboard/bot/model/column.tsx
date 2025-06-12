@@ -63,6 +63,15 @@ export const columns: ColumnDef<BotModel>[] = [
                 Activate
               </Link>
             </DropdownMenuItem>
+            <DropdownMenuItem>
+              <Link
+                href={`/dashboard/bot/model/${row.original.name.replace(/\.tar\.gz$/, '')}/evaluation`}
+                as="button"
+                onClick={() => setOpen(false)}
+              >
+                Open Evaluation
+              </Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       )
