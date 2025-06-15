@@ -13,9 +13,9 @@ import Response from '#models/response'
 import Rule from '#models/rule'
 import Story from '#models/story'
 import { MultipartFile } from '@adonisjs/bodyparser'
-import rasaConfig from '#config/rasa'
-import Product from '#models/product'
-import Tag from '#models/tag'
+// import rasaConfig from '#config/rasa'
+// import Product from '#models/product'
+// import Tag from '#models/tag'
 
 interface IntentWithMessages {
   id: number
@@ -100,92 +100,19 @@ class BotService {
     onProcess: false,
   }
 
-  private rasaConfigDefault = rasaConfig({
-    product_name: [],
-    tag_name: [],
-  })
+  // private rasaConfigDefault = rasaConfig({
+  //   product_name: [],
+  //   tag_name: [],
+  // })
 
-  private initRasaConfig() {
-    Promise.all([Product.all(), Tag.all()]).then(([products, tags]) => {
-      this.rasaConfigDefault = rasaConfig({
-        product_name: products.map((product) => product.name),
-        tag_name: tags.map((tag) => tag.name),
-      })
-    })
-  }
-
-  // public defaultCustomActions = ['action_ask_product', 'action_ask_vehicle_model']
-  // public defaultSlots = {
-  //   product_name: {
-  //     type: 'text',
-  //     mappings: [
-  //       {
-  //         type: 'from_entity',
-  //         entity: 'product_name',
-  //       },
-  //       {
-  //         type: 'from_text',
-  //       },
-  //     ],
-  //   },
-  //   vehicle_name: {
-  //     type: 'text',
-  //     mappings: [
-  //       {
-  //         type: 'from_entity',
-  //         entity: 'vehicle_name',
-  //       },
-  //       {
-  //         type: 'from_text',
-  //       },
-  //     ],
-  //   },
+  // private initRasaConfig() {
+  //   Promise.all([Product.all(), Tag.all()]).then(([products, tags]) => {
+  //     this.rasaConfigDefault = rasaConfig({
+  //       product_name: products.map((product) => product.name),
+  //       tag_name: tags.map((tag) => tag.name),
+  //     })
+  //   })
   // }
-  // public defaultIntents = [
-  //   {
-  //     intent: 'ask_product',
-  //     examples: [
-  //       'Ada [Matrix](product_name)?',
-  //       'Gadah [Bi Led](product_name)?',
-  //       'Mau pasang [AES](product_name)',
-  //       'Spesifikasi [LED](product_name)',
-  //       '[Laser](product_name) masih ada?',
-  //     ],
-  //   },
-  //   {
-  //     intent: 'ask_vehicle_model',
-  //     examples: [
-  //       'Untuk mobil [Honda](vehicle_name)?',
-  //       'Untuk motor [Yamaha](vehicle_name)?',
-  //       'Mau pasang untuk [Suzuki](vehicle_name)?',
-  //       '[Vespa](vehicle_name) ada billed apa?',
-  //     ],
-  //   },
-  // ]
-  // public defaultRules = [
-  //   {
-  //     rule: 'Tanya Produk',
-  //     steps: [
-  //       {
-  //         intent: 'ask_product',
-  //       },
-  //       {
-  //         action: 'action_ask_product',
-  //       },
-  //     ],
-  //   },
-  //   {
-  //     rule: 'Tanya Kendaraan',
-  //     steps: [
-  //       {
-  //         intent: 'ask_vehicle_model',
-  //       },
-  //       {
-  //         action: 'action_ask_vehicle_model',
-  //       },
-  //     ],
-  //   },
-  // ]
 
   public async addDataset(rawFile: MultipartFile) {
     if (!rawFile || this.status.onProcess) return
@@ -269,7 +196,7 @@ class BotService {
       message: 'Training model',
     }
 
-    this.initRasaConfig()
+    // this.initRasaConfig()
 
     try {
       const intents = await Intent.query()
@@ -299,15 +226,6 @@ class BotService {
           testIntentWithMessages.push({ id: intent.id, name: intent.name, messages: testMessages })
         }
       }
-
-      // console.dir(
-      //   trainIntentWithMessages.map((intent) => intent.name),
-      //   { depth: null }
-      // )
-      // console.dir(
-      //   testIntentWithMessages.map((intent) => intent.name),
-      //   { depth: null }
-      // )
 
       const responses = await Response.query().orderBy('name', 'asc')
       const rules = await Rule.query()
@@ -348,11 +266,11 @@ class BotService {
           },
           {
             name: 'ResponseSelector',
-            epochs: 25,
+            epochs: 100,
           },
           {
             name: 'FallbackClassifier',
-            threshold: 0.5,
+            threshold: 0.7,
             ambiguity_threshold: 0.1,
           },
         ],
@@ -369,21 +287,21 @@ class BotService {
           {
             name: 'TEDPolicy',
             max_history: 5,
-            epochs: 25,
+            epochs: 100,
           },
         ],
         intents: [
           ...intents.map((intent) => intent.name),
-          ...this.rasaConfigDefault.intents
-            .filter((intent) => !!intent.intent)
-            .map((intent) => intent.intent),
+          // ...this.rasaConfigDefault.intents
+          //   .filter((intent) => !!intent.intent)
+          //   .map((intent) => intent.intent),
           'nlu_fallback',
         ],
-        entities: this.rasaConfigDefault.entities,
-        slots: this.rasaConfigDefault.slots,
+        // entities: this.rasaConfigDefault.entities,
+        // slots: this.rasaConfigDefault.slots,
         actions: [
           'action_default_fallback',
-          ...this.rasaConfigDefault.actions.map((action) => action),
+          // ...this.rasaConfigDefault.actions.map((action) => action),
         ],
         // forms: [],
         // e2e_actions: [],
@@ -406,13 +324,13 @@ class BotService {
               ''
             ),
           })),
-          ...this.rasaConfigDefault.intents.map((intent) => ({
-            ...intent,
-            examples: intent.examples.reduce(
-              (acc, message) => (acc !== '' ? `${acc}\n- ${message}` : `- ${message}`),
-              ''
-            ),
-          })),
+          // ...this.rasaConfigDefault.intents.map((intent) => ({
+          //   ...intent,
+          //   examples: intent.examples.reduce(
+          //     (acc, message) => (acc !== '' ? `${acc}\n- ${message}` : `- ${message}`),
+          //     ''
+          //   ),
+          // })),
         ],
         rules: [
           ...rules.map((rule) => ({
@@ -426,7 +344,7 @@ class BotService {
               },
             ]),
           })),
-          ...this.rasaConfigDefault.rules,
+          // ...this.rasaConfigDefault.rules,
           {
             rule: 'Activate fallback response',
             steps: [
